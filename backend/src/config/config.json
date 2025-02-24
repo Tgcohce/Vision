@@ -1,0 +1,88 @@
+{
+  "networkId": "avs-network-001",
+  "environment": "testnet",
+  "globalDefaults": {
+    "timeout": 3000,
+    "retryAttempts": 3
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "governance",
+      "properties": {
+        "votingThreshold": 0.67,
+        "stakingRequirement": 1000
+      },
+      "integration": {
+        "provider": "Othentic"
+      },
+      "dependencies": ["node_2", "node_3"]
+    },
+    {
+      "id": "node_2",
+      "type": "attestation",
+      "properties": {
+        "minValidators": 5
+      },
+      "integration": {
+        "provider": "Othentic"
+      },
+      "dependencies": []
+    },
+    {
+      "id": "node_3",
+      "type": "p2p",
+      "properties": {
+        "protocol": "libp2p",
+        "maxPeers": 20
+      },
+      "integration": {
+        "provider": "P2P"
+      },
+      "dependencies": []
+    },
+    {
+      "id": "node_4",
+      "type": "ai",
+      "properties": {
+        "model": "anomalyDetector",
+        "threshold": 0.05
+      },
+      "integration": {
+        "provider": "Gaia"
+      },
+      "dependencies": ["node_1"]
+    },
+    {
+      "id": "node_5",
+      "type": "tangle",
+      "properties": {
+        "ledgerId": "tangle_01"
+      },
+      "integration": {
+        "provider": "Tangle"
+      },
+      "dependencies": []
+    }
+  ],
+  "connections": [
+    {
+      "source": "node_1",
+      "target": "node_4",
+      "channel": "data",
+      "parameters": {
+        "format": "JSON"
+      }
+    },
+    {
+      "source": "node_2",
+      "target": "node_1",
+      "channel": "control"
+    },
+    {
+      "source": "node_3",
+      "target": "node_1",
+      "channel": "message"
+    }
+  ]
+}

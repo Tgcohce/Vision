@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AVS Design Schema",
+  "type": "object",
+  "properties": {
+    "networkId": { "type": "string" },
+    "environment": { "type": "string" },
+    "globalDefaults": { "type": "object" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "properties": { "type": "object" },
+          "integration": { "type": "object" },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["id", "type", "properties", "integration"]
+      }
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "channel": { "type": "string" },
+          "parameters": { "type": "object" }
+        },
+        "required": ["source", "target", "channel"]
+      }
+    }
+  },
+  "required": ["networkId", "environment", "nodes", "connections"]
+}

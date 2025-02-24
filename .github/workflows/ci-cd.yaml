@@ -1,0 +1,68 @@
+name: AVS Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate IR schema
+        run: node -e "require('./src/ir/irCompiler').parseAndValidateDesign(require('./src/config/config.json'))"
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Run Hygen Code Generation
+        run: npm run generate
+
+      - name: Run Static Analysis on Smart Contracts
+        run: |
+          # Example: run Slither for Solidity contracts (update the path as needed)
+          pip3 install slither-analyzer
+          slither ./contracts
+
+      - name: Assemble Deployment Manifest
+        run: node src/deploy/manifestGenerator.js
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy Artifacts
+        run: npm run deploy
+
+      - name: Start Monitoring Service
+        run: |
+          nohup node src/monitoring/monitoringService.js &
+          sleep 10
+          curl http://localhost:3001/metrics

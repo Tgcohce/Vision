@@ -14,6 +14,17 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(bodyParser.json());
 
+const { rollbackDeployment } = require('./deploy/rollbackManager');
+
+app.post('/api/deployment/rollback', authenticateToken, authorizeRole('admin'), (req, res) => {
+  const { version } = req.body;
+  try {
+    rollbackDeployment(version);
+    res.status(200).json({ message: `Rollback to version ${version} successful` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 const { simulateDeployment } = require('./deploy/simulation');
 

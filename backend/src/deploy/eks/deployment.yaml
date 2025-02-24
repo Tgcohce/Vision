@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: offchain-service
+  labels:
+    app: offchain-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: offchain-service
+  template:
+    metadata:
+      labels:
+        app: offchain-service
+    spec:
+      containers:
+        - name: offchain-service
+          image: your-docker-registry/offchain-service:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: ENVIRONMENT
+              value: "testnet"
+            - name: STAKING_REQUIREMENT
+              value: "1500"

@@ -1,0 +1,13 @@
+replicaCount: 2
+
+image:
+  repository: your-docker-registry/offchain-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+
+env:
+  environment: testnet

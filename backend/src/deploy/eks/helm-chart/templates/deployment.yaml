@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "offchain-service.fullname" . }}
+  labels:
+    app: {{ include "offchain-service.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "offchain-service.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "offchain-service.name" . }}
+    spec:
+      containers:
+        - name: offchain-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: ENVIRONMENT
+              value: "{{ .Values.env.environment }}"

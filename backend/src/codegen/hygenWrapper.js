@@ -11,7 +11,7 @@ async function generateComponent(node) {
     "governance": "smart-contracts/governance",
     "attestation": "smart-contracts/attestation",
     "p2p": "p2p/messaging",
-    "ai": "ai/gaia",
+    "ai": "ai/ai",
     "tangle": "tangle/logger"
   };
 

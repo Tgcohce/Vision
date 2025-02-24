@@ -10,7 +10,7 @@ class <%= h.capitalize(name) %>Gaia {
   constructor(options = {}) {
     this.model = '<%= model %>';
     this.threshold = <%= threshold %>;
-    this.endpoint = options.endpoint || 'http://gaia.example.com/api';
+    this.endpoint = options.endpoint || process.env.GAIA_ENDPOINT || 'http://default-gaia-endpoint';
     this.axiosInstance = axios.create({
       baseURL: this.endpoint,
       timeout: 5000

@@ -1,18 +1,13 @@
 const { runner } = require('hygen');
 const { createPrompter } = require('enquirer');
 
-/**
- * Generate code for a single node using Hygen.
- * @param {Object} node - The node from the IR.
- */
 async function generateComponent(node) {
   // Map node type to Hygen template directory
   const templateMapping = {
     "governance": "smart-contracts/governance",
     "attestation": "smart-contracts/attestation",
-    "p2p": "p2p/messaging",
-    "ai": "ai/ai",
-    "tangle": "tangle/logger"
+    "p2p": "p2p",
+    "ai": "ai"
   };
 
   const templateFolder = templateMapping[node.type];
@@ -21,12 +16,20 @@ async function generateComponent(node) {
     return;
   }
 
-  // Build Hygen command arguments
-  const args = ['generate', templateFolder, '--name', node.id];
+  // Build arguments dynamically; environment variables can override IR values
+  const args = [
+    'generate',
+    templateFolder + '/new',
+    '--name', node.id,
+    '--votingThreshold', node.properties.votingThreshold || process.env.DEFAULT_VOTING_THRESHOLD || '70',
+    '--stakingRequirement', node.properties.stakingRequirement || process.env.DEFAULT_STAKING_REQUIREMENT || '1500'
+  ];
 
-  // Append additional properties as arguments
+  // Add additional properties if available
   for (const [key, value] of Object.entries(node.properties)) {
-    args.push(`--${key}`, String(value));
+    if (!['votingThreshold', 'stakingRequirement'].includes(key)) {
+      args.push(`--${key}`, String(value));
+    }
   }
 
   try {
@@ -41,10 +44,6 @@ async function generateComponent(node) {
   }
 }
 
-/**
- * Generate code for all nodes in the IR.
- * @param {Object} ir - The normalized design.
- */
 async function generateFromIR(ir) {
   for (const node of ir.nodes) {
     await generateComponent(node);

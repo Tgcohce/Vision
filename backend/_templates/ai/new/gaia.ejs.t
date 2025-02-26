@@ -6,22 +6,20 @@ to: ai/<%= name %>Gaia.js
 const axios = require('axios');
 const retry = require('async-retry');
 
+/**
+ * <%= h.capitalize(name) %>Gaia integrates with the Gaia AI service.
+ */
 class <%= h.capitalize(name) %>Gaia {
   constructor(options = {}) {
-    this.model = '<%= model %>';
-    this.threshold = <%= threshold %>;
-    this.endpoint = options.endpoint || process.env.GAIA_ENDPOINT || 'http://default-gaia-endpoint';
+    this.model = process.env.GAIA_MODEL || '<%= model %>';
+    this.threshold = +(process.env.GAIA_THRESHOLD || <%= threshold %>);
+    this.endpoint = process.env.GAIA_ENDPOINT || options.endpoint || 'http://default-gaia-endpoint';
     this.axiosInstance = axios.create({
       baseURL: this.endpoint,
       timeout: 5000
     });
   }
 
-  /**
-   * Sends data for analysis to the Gaia AI service.
-   * @param {Object} data - The input data for analysis.
-   * @returns {Promise<Object>} - The analysis results.
-   */
   async analyze(data) {
     try {
       const response = await retry(async () => {
@@ -34,12 +32,12 @@ class <%= h.capitalize(name) %>Gaia {
       }, {
         retries: 3,
         onRetry: (err, attempt) => {
-          console.warn(`Retry attempt ${attempt} for Gaia analysis due to: ${err.message}`);
+          console.warn(`Retry attempt ${attempt} for Gaia analysis: ${err.message}`);
         }
       });
       return response.data;
     } catch (error) {
-      console.error('Gaia analysis failed after retries:', error);
+      console.error('Gaia analysis failed:', error);
       throw error;
     }
   }

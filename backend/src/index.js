@@ -65,6 +65,48 @@ app.post('/api/deployment/deploy', authenticateToken, authorizeRole('operator', 
     res.status(500).json({ error: error.message });
   }
 });
+const avsDataAggregator = require('./integrations/avsDataAggregator');
+
+app.get('/api/retina/avs/:avsAddress', authenticateToken, async (req, res) => {
+  const { avsAddress } = req.params;
+  // Optionally, you can read query parameters for ABI and providerUrl
+  // For security, you might restrict ABI input or provide a selection of known ABIs.
+  const options = {
+    providerUrl: req.query.providerUrl, // e.g., override default if provided
+    // If a custom ABI is provided, you might parse it (make sure it's safe!)
+    // abi: req.query.abi ? JSON.parse(req.query.abi) : undefined,
+    offchainEndpoint: req.query.offchainEndpoint // if user wants to include offchain status
+  };
+  try {
+    const data = await avsDataAggregator.aggregateAvsData(avsAddress, options);
+    res.status(200).json({ message: 'Aggregated AVS data retrieved successfully', data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const tangleBlueprintProcessor = require('./integrations/tangleBlueprintProcessor');
+
+app.post('/api/tangle/blueprint', authenticateToken, async (req, res) => {
+  try {
+    const blueprintData = req.body;
+    const result = await tangleBlueprintProcessor.processTangleBlueprint(blueprintData);
+    res.status(200).json({ message: 'Blueprint processed successfully', result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const avsDataAggregator = require('./integrations/avsDataAggregator');
+
+app.get('/api/avs/debug', authenticateToken, async (req, res) => {
+  try {
+    const aggregatedData = await avsDataAggregator.aggregateAvsData();
+    res.status(200).json(aggregatedData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Endpoint to rollback to a previous deployment version
 app.post('/api/deployment/rollback', authenticateToken, authorizeRole('admin'), (req, res) => {

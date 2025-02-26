@@ -1,44 +1,106 @@
 ---
-to: contracts/<%= name %>Attestation.sol
+to: contracts/<%= name %>AttestationCenter.sol
 ---
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
+
+// SPDX-License-Identifier: BUSL-1.1
+
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title <%= h.capitalize(name) %>Attestation
- * @dev Contract for collecting and validating task attestations.
+ * @title ITaskFeeCalculator
+ * @dev Interface for a fee calculator contract.
  */
-contract <%= h.capitalize(name) %>Attestation {
-    uint256 public minValidators;
+interface ITaskFeeCalculator {
+    function calculateFees(uint16 taskDefinitionId, uint256 amount) external view returns (uint256 feeAttesters, uint256 feePerformers, uint256 feeAggregators);
+}
 
-    // Mapping taskId to aggregated validation result.
-    mapping(uint256 => bool) public taskResults;
-    // Mapping taskId to count of validations received.
-    mapping(uint256 => uint256) public taskValidationCount;
+/**
+ * @title <%= h.capitalize(name) %>AttestationCenter
+ * @dev Attestation Center contract that bridges off-chain execution with on-chain verification,
+ *      records task submissions, and manages task definitions.
+ */
+contract <%= h.capitalize(name) %>AttestationCenter is Ownable {
+    // Structure defining task information
+    struct TaskInfo {
+        uint16 taskDefinitionId;
+        string proofOfTask;   // e.g., a hash or signature string that off-chain attesters can verify
+        bytes data;           // auxiliary metadata (could include inputs for SNARK proofs, etc.)
+        address taskPerformer;
+        bool signed;
+    }
 
-    // Event for attestation.
-    event TaskAttested(uint256 indexed taskId, address indexed validator, bool success, uint256 timestamp);
+    // Structure for task submission details
+    struct TaskSubmissionDetails {
+        bool _isApproved;
+        bytes _tpSignature;          // ECDSA signature from the Task Performer
+        uint256[2] _taSignature;     // Aggregated BLS signature from Task Attesters
+        uint256[] _operatorIds;      // IDs of participating operators
+    }
+
+    // Mapping from a task ID to its TaskInfo
+    mapping(uint256 => TaskInfo) public tasks;
+    uint256 public taskCounter;
+
+    // Address of an optional fee calculator contract
+    ITaskFeeCalculator public feeCalculator;
+
+    // Events
+    event TaskSubmitted(uint256 indexed taskId, address indexed taskPerformer, bool isApproved);
+    event TaskDefinitionCreated(uint16 indexed taskDefinitionId, string definitionDetails);
 
     /**
-     * @dev Initializes the contract with the minimum number of validators required.
+     * @dev Sets the fee calculator contract address.
+     * Can be updated later by the owner.
      */
-    constructor(uint256 _minValidators) {
-        require(_minValidators > 0, "Minimum validators must be greater than 0");
-        minValidators = _minValidators;
+    function setFeeCalculator(address _feeCalculator) external onlyOwner {
+        feeCalculator = ITaskFeeCalculator(_feeCalculator);
     }
 
     /**
-     * @dev Submit an attestation for a given task.
-     * @param taskId The identifier of the task.
-     * @param success The attestation result.
+     * @dev Submits a task.
+     * The process may include pre- and post-submission hooks in a full implementation.
+     * @param _taskInfo The task information.
+     * @param _taskSubmissionDetails The submission details including signatures.
      */
-    function attestTask(uint256 taskId, bool success) external {
-        // In production, add checks to ensure msg.sender is a recognized validator.
-        taskValidationCount[taskId] += 1;
+    function submitTask(TaskInfo calldata _taskInfo, TaskSubmissionDetails calldata _taskSubmissionDetails) external {
+        require(!_taskInfo.signed, "Task already submitted");
 
-        // Once the threshold is met, record the result.
-        if (taskValidationCount[taskId] >= minValidators) {
-            taskResults[taskId] = success;
+        // Pre-processing hook can be added here (if external logic is set)
+
+        // Validate the task's signature(s) and check for duplicate submission
+        // (Actual signature verification logic to be implemented)
+
+        // Calculate fees if feeCalculator is set
+        if (address(feeCalculator) != address(0)) {
+            (uint256 feeAttesters, uint256 feePerformers, uint256 feeAggregators) =
+                feeCalculator.calculateFees(_taskInfo.taskDefinitionId, 1 ether);
+            // Use these fees for rewards, slashing, etc. (not implemented in this MVP)
         }
-        emit TaskAttested(taskId, msg.sender, success, block.timestamp);
+
+        // Mark task as submitted
+        taskCounter++;
+        tasks[taskCounter] = TaskInfo({
+            taskDefinitionId: _taskInfo.taskDefinitionId,
+            proofOfTask: _taskInfo.proofOfTask,
+            data: _taskInfo.data,
+            taskPerformer: _taskInfo.taskPerformer,
+            signed: true
+        });
+
+        emit TaskSubmitted(taskCounter, _taskInfo.taskPerformer, _taskSubmissionDetails._isApproved);
+
+        // Post-processing hook can be added here (if external logic is set)
+    }
+
+    /**
+     * @dev Creates a new task definition.
+     * This allows the AVS developer to configure different types of tasks.
+     * @param _taskDefinitionId The identifier for the new task definition.
+     * @param _definitionDetails A string describing the task definition.
+     */
+    function createTaskDefinition(uint16 _taskDefinitionId, string calldata _definitionDetails) external onlyOwner {
+        // In production, you'd store the task definition in a mapping or external registry.
+        emit TaskDefinitionCreated(_taskDefinitionId, _definitionDetails);
     }
 }

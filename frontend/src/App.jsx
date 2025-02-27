@@ -1,8 +1,7 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import DragAndDropAVS from './pages/DragAndDropAVS';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import LandingPage from "./pages/LandingPage"
+import DragAndDropAVS from "./pages/DragAndDropAVS"
+import "./App.css"
 
 function App() {
   return (
@@ -14,7 +13,8 @@ function App() {
         </Routes>
       </div>
     </Router>
-  );
+  )
 }
 
-export default App;
+export default App
+

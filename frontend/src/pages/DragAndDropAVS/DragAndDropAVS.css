@@ -1,26 +1,343 @@
-/*
+:root {
+  --primary-color: #000000;
+  --secondary-color: #ffffff;
+  --text-color: #ffffff;
+  --figma-color: #c59dd8;
+  --figmaTwo-color: #3e2c4d;
+  --figmaThree-color: #06091c;
+  --grid-color: rgba(197, 157, 216, 0.1);
+  --block-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 60px;
+  --header-height: 50px;
+}
 
-REWORKKKKKKKKK, with libraries found and saved, drag and drop baller code from personal repo
+.drag-and-drop-avs {
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(to bottom right, var(--figmaThree-color), var(--figmaTwo-color));
+  color: var(--text-color);
+  font-family: "Kodchasan", sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-.avs-creator {
-    padding: 2rem;
-  }
-  
-  .avs-creator__canvas {
-    margin-top: 1rem;
-    min-height: 200px;
-    border: 2px dashed #ccc;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    padding: 1rem;
-  }
-  
-  .avs-creator__element {
-    background-color: #f0f0f0;
-    padding: 1rem;
-    border-radius: 8px;
+/* grid lines overlay */
+.canvas::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, var(--grid-color) 1px, transparent 1px) 0 0 / 50px 50px,
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px) 0 0 / 50px 50px;
+  pointer-events: none;
+}
+
+/* 2orkspace layout for the grid  */
+.workspace-container {
+  display: flex;
+  height: calc(100vh - var(--header-height));
+  width: 100%;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: rgba(0, 0, 0, 0.7);
+  border-right: 1px solid rgba(197, 157, 216, 0.2);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.closed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid rgba(197, 157, 216, 0.2);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--figma-color);
+}
+
+.toggle-sidebar {
+  background: transparent;
+  border: none;
+  color: var(--figma-color);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-palette {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sidebar-footer {
+  padding: 15px;
+  border-top: 1px solid rgba(197, 157, 216, 0.2);
+  display: flex;
+  justify-content: center;
+}
+
+/* Canvas */
+.canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5000px;
+  height: 5000px;
+  transform-origin: top left;
+  background-color: transparent;
+}
+
+.canvas-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 100;
+}
+
+.canvas-controls button {
+  background-color: rgba(197, 157, 216, 0.2);
+  border: 1px solid var(--figma-color);
+  color: var(--text-color);
+  min-width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  padding: 0 10px;
+}
+
+.canvas-controls button:hover {
+  background-color: rgba(197, 157, 216, 0.4);
+}
+
+.canvas-controls span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  color: var(--text-color);
+}
+
+.delete-button {
+  background-color: rgba(197, 157, 216, 0.2) !important;
+  border-color: var(--figma-color) !important;
+}
+
+.delete-button:hover {
+  background-color: rgba(197, 157, 216, 0.4) !important;
+}
+
+.block {
+  position: absolute;
+  width: 200px;
+  border-radius: 8px;
+  box-shadow: var(--block-shadow);
+  background-color: rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.1s, opacity 0.2s;
+  will-change: transform;
+  touch-action: none;
+}
+
+.block.selected {
+  box-shadow: 0 0 0 2px var(--figma-color), var(--block-shadow);
+}
+
+.block.dragging {
+  opacity: 0.7;
+  transform: scale(1.02);
+}
+
+.palette-block {
+  position: relative;
+  margin-bottom: 15px;
+  cursor: grab;
+}
+
+.canvas-block:hover {
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+  padding: 10px;
+  color: white;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.block-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.block-body {
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.block-description {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+/* Connectors */
+.block-connectors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.connector {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.connector:hover .connector-dot {
+  transform: scale(1.2);
+  background-color: var(--figma-color);
+}
+
+.connector.input {
+  justify-content: flex-start;
+}
+
+.connector.output {
+  justify-content: flex-end;
+}
+
+.connector-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ccc;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.connector-label {
+  margin: 0 5px;
+}
+
+/* Connections */
+.connections-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.connection path {
+  pointer-events: none;
+  transition: stroke-width 0.2s ease;
+}
+
+.connection path:hover {
+  stroke-width: 3;
+}
+
+.connection-delete {
+  cursor: pointer;
+  pointer-events: all;
+  transition: r 0.2s, fill 0.2s;
+  filter: drop-shadow(0 0 2px var(--figma-color));
+}
+
+.connection-delete:hover {
+  r: 7;
+  fill: #ff4444;
+}
+
+/* Action buttons */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: none;
+}
+
+.save-button {
+  background-color: var(--figma-color);
+  color: #000;
+  font-weight: 600;
+}
+
+.save-button:hover {
+  background-color: #d7b5e9;
+}
+
+/* responsive fixes */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    z-index: 10;
+    height: 100%;
   }
 
-*/
-  
+  .sidebar.closed {
+    transform: translateX(-100%);
+    width: var(--sidebar-width);
+  }
+
+  .toggle-sidebar {
+    position: absolute;
+    right: -40px;
+    top: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 0 4px 4px 0;
+    padding: 10px;
+  }
+}
+
+

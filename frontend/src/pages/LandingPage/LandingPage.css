@@ -2,125 +2,188 @@
 /* COLORS  */
 /* ---------------------------------- */
 :root {
-  --primary-color: #000000;    
-  --secondary-color: #ffffff;  
-  --text-color: #ffffff;       
+  --primary-color: #000000;
+  --secondary-color: #ffffff;
+  --text-color: #ffffff;
+  --figma-color: #c59dd8;
+  --figmaTwo-color: #3e2c4d;
+  --figmaThree-color: #06091c;
 }
 
+/* Grid lines overlay */
+.grid-lines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-lines::before,
+.grid-lines::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(to right, rgba(197, 157, 216, 0.1) 1px, transparent 1px);
+  background-size: 100px 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.grid-lines::after {
+  transform: rotate(90deg);
+}
+
+/* Diagonal lines */
+.diagonal-lines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(45deg, rgba(197, 157, 216, 0.1) 1px, transparent 1px),
+    linear-gradient(-45deg, rgba(197, 157, 216, 0.1) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
 
 /* parent landing page container */
 .landing-page {
   height: 100vh;
-  background: linear-gradient(to bottom right, #000, #333);
+  background: linear-gradient(to bottom right, var(--figmaThree-color), var(--figmaTwo-color));
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 2rem;
   box-sizing: border-box;
   color: #fff;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
+  padding-top: 70px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Content wrapper to ensure it's above the grid */
+.content-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* orientation for title contents*/
 .landing-page__content {
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 2;
 }
 
-/* vision title layout, fix after graphics are made */
+/* vision title layout */
 .landing-page__title {
-  font-family: 'Plaster', sans-serif;
-  font-size: 6rem;
+  font-family: "Kodchasan", sans-serif;
+  font-size: 9rem;
   font-weight: 400;
   margin: 0;
   text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.8);
-  margin-left: 12rem; 
-  margin-bottom: 12rem;
+  margin-left: 12rem;
+  margin-bottom: 2rem;
+  background: linear-gradient(45deg, var(--figma-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* Note for typed text , margin-top & margin-left to position it lower & further right 
-*/
+/* Fixed the typewriter effect by using a container with fixed height */
 .landing-page__subtitle {
-  margin-top: 5rem;       
+  font-family: "Kodchasan", sans-serif;
   margin-left: 15rem;
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 300;
-  color: #ccc;
+  color: var(--figma-color);
   letter-spacing: 1px;
-}
-
-.landing-page__action {
+  height: 2rem;
   display: flex;
   align-items: center;
 }
 
-/* Baller animated button (ac_btn) tagged  */
+/* Rest of your existing CSS remains the same */
+/* ... */
 
+/* Update button styles to match Figma */
 .ac_btn {
-  /* button size and raleway font same as sub */
-  padding: 12px 30px;            
-  /* increase padding for a bigger button */
-  font-size: 1.5rem;            
-  /* text size control */
+  padding: 20px 40px;
+  font-size: 1.5rem;
   font-weight: 200;
-
-  border: 2px solid var(--secondary-color);
-  border-radius: 0;
-  background: transparent; 
-  color: var(--secondary-color);
+  border: 2px solid var(--figma-color);
+  border-radius: 25px;
+  background: transparent;
+  color: var(--figma-color);
   text-decoration: none;
   cursor: pointer;
-
   position: relative;
-  overflow: hidden;
   transition: all 0.6s cubic-bezier(0.55, 0, 0.1, 1);
-
-  border-radius: 25px;
-  /* change this for more "boxlike" button */
-
-  margin-right: 18rem; 
+  margin-right: 18rem;
   margin-top: 12rem;
+  z-index: 2;
 }
 
-/* hover animation, produces the directional box-shadow, baller stuff */
 .ac_btn:hover {
-  box-shadow:
-    8px 8px 0px var(--text-color),
-    -8px -8px 0px var(--text-color);
+  box-shadow: 8px 8px 0px var(--figma-color), -8px -8px 0px var(--figma-color);
 }
 
-/* "rings" for the layered animations */
-.ring {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  background: transparent;
-  top: 0;
-  left: 0;
-  transform: translate3d(0, 90px, 0);
-}
-
-.one {
-  background-color: #000;
-  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
-  z-index: -1;
-}
-
-.two {
-  background-color: var(--primary-color);
-  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-  z-index: -2;
-}
-
+/* Remove the ring styles that were causing the black box */
+.ring,
+.one,
+.two,
 .three {
-  background-color: var(--secondary-color);
-  transition: all 0.7s cubic-bezier(0.55, 0, 0.1, 1);
-  z-index: -3;
+  display: none;
 }
 
-.ac_btn:hover .one,
-.ac_btn:hover .two,
-.ac_btn:hover .three {
-  transform: translate3d(0, 0, 0);
-  /* sets animation */
+/* Keep your responsive styles */
+@media (max-width: 992px) {
+  .landing-page__title {
+    font-size: 4rem;
+    margin-left: 6rem;
+  }
+
+  .landing-page__subtitle {
+    margin-left: 7rem;
+  }
+
+  .ac_btn {
+    margin-right: 6rem;
+  }
 }
+
+@media (max-width: 768px) {
+  .landing-page {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .landing-page__title {
+    margin-left: 0;
+    font-size: 3.5rem;
+  }
+
+  .landing-page__subtitle {
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .landing-page__action {
+    margin-top: 3rem;
+  }
+
+  .ac_btn {
+    margin-right: 0;
+    margin-top: 2rem;
+  }
+}
+

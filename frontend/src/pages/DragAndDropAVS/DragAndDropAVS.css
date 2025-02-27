@@ -540,3 +540,270 @@
     padding: 10px;
   }
 }
+
+
+/* Block dropdown styles */
+.block-dropdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.block-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(197, 157, 216, 0.3);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  z-index: 200;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  color: #ddd;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(197, 157, 216, 0.3);
+  color: white;
+}
+
+/* Connection highlighting improvements */
+.connector-highlight .connector-dot {
+  transform: scale(1.5) !important;
+  box-shadow: 0 0 15px var(--connection-valid-color) !important;
+  background-color: var(--connection-valid-color) !important;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { box-shadow: 0 0 10px var(--connection-valid-color); }
+  to { box-shadow: 0 0 20px var(--connection-valid-color); }
+}
+
+/* Enhanced grid styles */
+.canvas-content.grid-enabled::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(to right, rgba(197, 157, 216, 0.15) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(to bottom, rgba(197, 157, 216, 0.15) 1px, transparent 1px) 0 0 / 100px 100px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+/* Better drag indicators */
+.block.dragging {
+  opacity: 0.7;
+  transform: scale(1.05);
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Enhanced cursor styles for connection states */
+.canvas.connection-valid {
+  cursor: crosshair;
+}
+
+.canvas.connection-invalid {
+  cursor: not-allowed;
+}
+
+/* Improved connector hover effects */
+.connector:hover .connector-dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 12px var(--figma-color);
+}
+
+.connector:hover .connector-label {
+  color: white;
+  font-weight: 500;
+}
+
+/* Improve connection performance */
+.connection {
+  will-change: transform;
+}
+
+.connection-flow {
+  animation: flowDash 30s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Improved connection visualization */
+.connection:hover .connection-flow,
+.connection.connection-active .connection-flow {
+  opacity: 0.8;
+}
+
+.connection.connection-active .connection-line {
+  stroke-width: 3px;
+}
+
+.connection.connection-active .connection-glow {
+  stroke-width: 8px;
+  stroke-opacity: 0.4;
+}
+
+/* Responsive adjustments for sidebar */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    z-index: 200;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+
+  .sidebar.closed {
+    transform: translateX(-100%);
+    width: var(--sidebar-width);
+  }
+
+  .toggle-sidebar {
+    position: absolute;
+    right: -40px;
+    top: 10px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 0 4px 4px 0;
+    padding: 10px;
+    z-index: 10;
+  }
+}
+
+
+.block-placeholder {
+  padding: 10px;
+  text-align: center;
+  color: #aaa;
+  font-size: 0.8rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 8px 8px;
+}
+
+/* Improved dropdown styles */
+.block-dropdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  margin-left: 8px;
+  transition: transform 0.2s;
+}
+
+.block-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(197, 157, 216, 0.3);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  z-index: 200;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  color: #ddd;
+  border-bottom: 1px solid rgba(197, 157, 216, 0.1);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(197, 157, 216, 0.3);
+  color: white;
+}
+
+.dropdown-item.active {
+  background-color: rgba(197, 157, 216, 0.2);
+  color: white;
+  font-weight: bold;
+}
+
+/* Make palette blocks more intuitive */
+.palette-block {
+  position: relative;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  min-height: 80px; /* Ensure minimum height for empty block */
+}
+
+.palette-block:hover {
+  transform: translateX(5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Improve connection stability */
+.connection {
+  will-change: transform;
+  pointer-events: all; /* Make connections more easily clickable */
+}
+
+.connection path {
+  transition: all 0.3s ease;
+}
+
+.connection-delete {
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform-origin: center;
+}
+
+.connection:hover .connection-delete {
+  opacity: 1;
+}
+
+.connection:active {
+  cursor: grabbing;
+}
+
+/* Improved connection highlighting */
+.connector-highlight .connector-dot {
+  transform: scale(1.5) !important;
+  box-shadow: 0 0 15px var(--connection-valid-color) !important;
+  background-color: var(--connection-valid-color) !important;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { box-shadow: 0 0 8px var(--connection-valid-color); }
+  to { box-shadow: 0 0 20px var(--connection-valid-color); }
+}

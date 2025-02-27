@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useDrop } from "react-dnd"
 import { v4 as uuidv4 } from "uuid"
-import { BLOCK_TYPES } from "./BlockTypes"
+import { BLOCK_TYPES, getBlockInfo } from "./BlockTypes"
 import Block from "./Block"
 import Connection from "./Connection"
 import CustomDragLayer from "./CustomDragLayer"
@@ -26,9 +26,109 @@ const Workspace = () => {
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [history, setHistory] = useState([])
   const [historyIndex, setHistoryIndex] = useState(-1)
+  const [canvasSize, setCanvasSize] = useState({ width: 5000, height: 5000 })
+  const [needsConnectorUpdate, setNeedsConnectorUpdate] = useState(false)
   
   const canvasRef = useRef(null)
   const connectingLineRef = useRef(null)
+  const connectorsRef = useRef(new Map()) // Store connector positions
+  const updateTimeout = useRef(null) // Reference for debouncing updates
+
+  // Update connector positions when blocks move
+  const updateConnectorPositions = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    const newConnectorMap = new Map()
+    
+    blocks.forEach(block => {
+      const blockEl = document.querySelector(`.block[data-block-id="${block.id}"]`)
+      if (!blockEl) return
+      
+      const blockRect = blockEl.getBoundingClientRect()
+      const canvasRect = canvasRef.current.getBoundingClientRect()
+      
+      // Process input connectors
+      const inputConnectors = blockEl.querySelectorAll('.connector.input')
+      inputConnectors.forEach(connector => {
+        const connectorName = connector.dataset.connectorName
+        const connectorDot = connector.querySelector('.connector-dot')
+        if (!connectorDot) return
+        
+        const dotRect = connectorDot.getBoundingClientRect()
+        const position = {
+          x: (dotRect.left - canvasRect.left) / zoom + pan.x,
+          y: (dotRect.top + dotRect.height/2 - canvasRect.top) / zoom + pan.y
+        }
+        
+        newConnectorMap.set(`${block.id}-input-${connectorName}`, position)
+      })
+      
+      // Process output connectors
+      const outputConnectors = blockEl.querySelectorAll('.connector.output')
+      outputConnectors.forEach(connector => {
+        const connectorName = connector.dataset.connectorName
+        const connectorDot = connector.querySelector('.connector-dot')
+        if (!connectorDot) return
+        
+        const dotRect = connectorDot.getBoundingClientRect()
+        const position = {
+          x: (dotRect.right - canvasRect.left) / zoom + pan.x,
+          y: (dotRect.top + dotRect.height/2 - canvasRect.top) / zoom + pan.y
+        }
+        
+        newConnectorMap.set(`${block.id}-output-${connectorName}`, position)
+      })
+    })
+    
+    connectorsRef.current = newConnectorMap
+    
+    // Update connections based on new connector positions
+    setConnections(prevConnections => 
+      prevConnections.map(conn => {
+        const fromKey = `${conn.fromId}-output-${conn.fromConnector}`
+        const toKey = `${conn.toId}-input-${conn.toConnector}`
+        
+        const start = newConnectorMap.get(fromKey)
+        const end = newConnectorMap.get(toKey)
+        
+        if (start && end) {
+          return { ...conn, start, end }
+        }
+        
+        return conn
+      })
+    )
+    
+    // Reset the update flag
+    setNeedsConnectorUpdate(false)
+  }, [blocks, zoom, pan])
+
+  // Run updateConnectorPositions after render and when blocks change or on mouse events
+  useEffect(() => {
+    // Clear any existing timeout to prevent multiple updates
+    if (updateTimeout.current) {
+      clearTimeout(updateTimeout.current)
+    }
+    
+    // Schedule an update with a small delay to allow DOM to update
+    if (needsConnectorUpdate) {
+      updateTimeout.current = setTimeout(() => {
+        updateConnectorPositions()
+        updateTimeout.current = null
+      }, 50)
+    }
+    
+    return () => {
+      if (updateTimeout.current) {
+        clearTimeout(updateTimeout.current)
+      }
+    }
+  }, [needsConnectorUpdate, updateConnectorPositions])
+
+  // Update connector positions when blocks change, zoom changes, or pan changes
+  useEffect(() => {
+    setNeedsConnectorUpdate(true)
+  }, [blocks, zoom, pan])
 
   // Save current state to history when changes occur
   useEffect(() => {
@@ -49,6 +149,38 @@ const Workspace = () => {
     }
   }, [blocks, connections, history, historyIndex])
 
+  // Update canvas size when container resizes
+  useEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current) {
+        const container = canvasRef.current.parentElement
+        if (container) {
+          setCanvasSize({
+            width: Math.max(5000, container.clientWidth * 3),
+            height: Math.max(5000, container.clientHeight * 3)
+          })
+        }
+      }
+    }
+    
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Listen to mouse events on the document to update connections when mouse is released
+  useEffect(() => {
+    const handleMouseUp = () => {
+      // Force connector position update after any mouse interaction
+      setNeedsConnectorUpdate(true)
+    }
+    
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
   // Undo/Redo functionality
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -56,6 +188,13 @@ const Workspace = () => {
       setBlocks(prevState.blocks)
       setConnections(prevState.connections)
       setHistoryIndex(historyIndex - 1)
+      
+      // Deselect any selected items
+      setSelectedBlock(null)
+      setSelectedConnection(null)
+      
+      // Force connector position update after undo
+      setNeedsConnectorUpdate(true)
     }
   }, [history, historyIndex])
 
@@ -65,10 +204,17 @@ const Workspace = () => {
       setBlocks(nextState.blocks)
       setConnections(nextState.connections)
       setHistoryIndex(historyIndex + 1)
+      
+      // Deselect any selected items
+      setSelectedBlock(null)
+      setSelectedConnection(null)
+      
+      // Force connector position update after redo
+      setNeedsConnectorUpdate(true)
     }
   }, [history, historyIndex])
 
-  // handle deleting selected block
+  // Handle deleting selected block
   const handleDeleteBlock = useCallback(() => {
     if (selectedBlock) {
       setBlocks(blocks.filter((block) => block.id !== selectedBlock))
@@ -77,7 +223,7 @@ const Workspace = () => {
     }
   }, [selectedBlock, blocks, connections])
 
-  // handle deleting a connection
+  // Handle deleting a connection
   const handleDeleteConnection = useCallback((connectionId) => {
     setConnections(connections.filter((conn) => conn.id !== connectionId))
     if (selectedConnection === connectionId) {
@@ -135,11 +281,12 @@ const Workspace = () => {
     if (!snapToGrid || !grid.enabled) return value
     return Math.round(value / grid.size) * grid.size
   }
-
-  // handle dropping blocks onto the canvas
+  
+  // Handle dropping blocks onto the canvas with improved positioning
   const [, drop] = useDrop(() => ({
     accept: "block",
     drop: (item, monitor) => {
+      // Get current mouse position
       const clientOffset = monitor.getClientOffset()
       const initialClientOffset = item.initialClientOffset
       const initialSourceClientOffset = item.initialSourceClientOffset
@@ -153,8 +300,8 @@ const Workspace = () => {
       
       if (item.isInPalette) {
         // Create a new block when dropping from palette - position at drop point
-        left = (clientOffset.x - canvasRect.left) / zoom - item.width / 2
-        top = (clientOffset.y - canvasRect.top) / zoom - 30 // Offset from mouse to top of block
+        left = (clientOffset.x - canvasRect.left) / zoom - item.width / 2 + pan.x
+        top = (clientOffset.y - canvasRect.top) / zoom - 30 + pan.y // Offset from mouse to top of block
       } else {
         // Calculate the drag delta for existing blocks
         const deltaX = (clientOffset.x - initialClientOffset.x) / zoom
@@ -164,7 +311,7 @@ const Workspace = () => {
         top = item.top + deltaY
       }
       
-      // applies snap to grid
+      // Apply snap to grid
       left = snapToGridPoint(left)
       top = snapToGridPoint(top)
 
@@ -173,65 +320,29 @@ const Workspace = () => {
         const newBlock = {
           id: uuidv4(),
           blockType: item.blockType,
+          subType: item.subType,
           left,
           top,
         }
         setBlocks((blocks) => [...blocks, newBlock])
       } else {
-        // moves existing block
+        // Move existing block
         setBlocks((blocks) => 
           blocks.map((block) => (block.id === item.id ? { ...block, left, top } : block))
-        )
-        
-        // Updatess connections
-        setConnections((connections) =>
-          connections.map((conn) => {
-            let updatedConn = { ...conn }
-            
-
-            const findConnectorPosition = (blockId, isInput, connectorName) => {
-              const block = blocks.find(b => b.id === blockId)
-              if (!block) return null
-              
-              // This is a simplification - ideally this would use the actual rendered position if possible lol
-              const blockLeft = blockId === item.id ? left : block.left
-              const blockTop = blockId === item.id ? top : block.top
-              
-              if (isInput) {
-                return { 
-                  x: blockLeft, 
-                  y: blockTop + 50 + 25 * (BLOCK_TYPES[block.blockType].inputs.indexOf(connectorName) || 0)
-                }
-              } else {
-                return { 
-                  x: blockLeft + 200, 
-                  y: blockTop + 50 + 25 * (BLOCK_TYPES[block.blockType].outputs.indexOf(connectorName) || 0)
-                }
-              }
-            }
-            
-            if (conn.fromId === item.id) {
-              const newPos = findConnectorPosition(item.id, false, conn.fromConnector)
-              if (newPos) updatedConn.start = newPos
-            }
-            
-            if (conn.toId === item.id) {
-              const newPos = findConnectorPosition(item.id, true, conn.toConnector)
-              if (newPos) updatedConn.end = newPos
-            }
-            
-            return updatedConn
-          })
         )
       }
       
       // Clear any selection when dropping
       setSelectedBlock(null)
+      
+      // Schedule connector position update
+      setNeedsConnectorUpdate(true)
+      
       return undefined
     },
-  }))
-
-  // handle completing a connection
+  }), [zoom, pan, snapToGrid, grid.enabled])
+  
+  // Handle completing a connection with improved positioning and validation
   const handleCompleteConnection = useCallback((blockId, isInput, connectorName) => {
     if (!connectingFrom || connectingFrom.blockId === blockId) {
       setIsConnecting(false)
@@ -239,145 +350,131 @@ const Workspace = () => {
       return
     }
 
-    // Make sure we're connecting an input to an output
+    // Make sure we're connecting an input to an output (or vice versa)
     if (connectingFrom.isInput === isInput) {
       setIsConnecting(false)
       setConnectingFrom(null)
       return
     }
 
-    const fromBlock = blocks.find((b) => b.id === connectingFrom.blockId)
-    const toBlock = blocks.find((b) => b.id === blockId)
-
-    if (!fromBlock || !toBlock) {
-      setIsConnecting(false)
-      setConnectingFrom(null)
-      return
-    }
-
-    // determine which is the source and which is the target
+    // Get source and target block info
     let sourceId, targetId, sourceConnector, targetConnector
-    let start = { ...connectingFrom }, end = { ...connectingTo }
-
-    if (connectingFrom.isInput) {
-      sourceId = blockId
-      targetId = connectingFrom.blockId
-      sourceConnector = connectorName
-      targetConnector = connectingFrom.connectorName
-      
-      //  start and end points based off movement
-      end = { ...connectingFrom }
-      
-      // Get the correct position for the start
-      const sourceEl = document.querySelector(
-        `.block[data-block-id="${blockId}"] .connector.output[data-connector-name="${connectorName}"] .connector-dot`
-      )
-      
-      if (sourceEl) {
-        const rect = sourceEl.getBoundingClientRect()
-        const canvasRect = canvasRef.current.getBoundingClientRect()
-        start = { 
-          x: rect.right - canvasRect.left + pan.x,
-          y: rect.top + rect.height/2 - canvasRect.top + pan.y
-        }
-      }
-    } else {
+    
+    if (isInput) {
+      // We're connecting TO an input, so the source is the connectingFrom (which must be an output)
       sourceId = connectingFrom.blockId
       targetId = blockId
       sourceConnector = connectingFrom.connectorName
       targetConnector = connectorName
-      start = { ...connectingFrom }
-      
-      // Get the correct position for the end
-      const targetEl = document.querySelector(
-        `.block[data-block-id="${blockId}"] .connector.input[data-connector-name="${connectorName}"] .connector-dot`
-      )
-      
-      if (targetEl) {
-        const rect = targetEl.getBoundingClientRect()
-        const canvasRect = canvasRef.current.getBoundingClientRect()
-        end = { 
-          x: rect.left - canvasRect.left + pan.x,
-          y: rect.top + rect.height/2 - canvasRect.top + pan.y
-        }
-      }
+    } else {
+      // We're connecting TO an output, so the source is the current block
+      sourceId = blockId
+      targetId = connectingFrom.blockId
+      sourceConnector = connectorName
+      targetConnector = connectingFrom.connectorName
     }
 
-    // checks if connection already exists
+    // Check if connection already exists
     const connectionExists = connections.some(
       (conn) =>
         conn.fromId === sourceId &&
         conn.toId === targetId &&
         conn.fromConnector === sourceConnector &&
-        conn.toConnector === targetConnector,
+        conn.toConnector === targetConnector
     )
 
-    if (!connectionExists) {
-      const newConnection = {
-        id: uuidv4(),
-        fromId: sourceId,
-        toId: targetId,
-        fromConnector: sourceConnector,
-        toConnector: targetConnector,
-        start,
-        end,
-        type: "default",
-        sourceType: BLOCK_TYPES[fromBlock.blockType].type,
-        targetType: BLOCK_TYPES[toBlock.blockType].type,
-      }
+    if (connectionExists) {
+      setIsConnecting(false)
+      setConnectingFrom(null)
+      return
+    }
+
+    // Get connector positions from our reference map
+    const start = connectorsRef.current.get(`${sourceId}-output-${sourceConnector}`)
+    const end = connectorsRef.current.get(`${targetId}-input-${targetConnector}`)
+    
+    // Create new connection with proper metadata
+    if (start && end) {
+      const sourceBlock = blocks.find(b => b.id === sourceId)
+      const targetBlock = blocks.find(b => b.id === targetId)
       
-      setConnections(prev => [...prev, newConnection])
+      if (sourceBlock && targetBlock) {
+        const newConnection = {
+          id: uuidv4(),
+          fromId: sourceId,
+          toId: targetId,
+          fromConnector: sourceConnector,
+          toConnector: targetConnector,
+          start,
+          end,
+          type: "default",
+          sourceType: sourceBlock.blockType,
+          targetType: targetBlock.blockType,
+        }
+        
+        setConnections(prev => [...prev, newConnection])
+      }
     }
 
     setIsConnecting(false)
     setConnectingFrom(null)
-  }, [blocks, connectingFrom, connectingTo, connections, pan])
+  }, [blocks, connections, connectingFrom])
+  
+  // Handle starting a connection with improved coordinate tracking
+  const handleStartConnection = useCallback((blockId, isInput, connectorName, connectorRect) => {
+    const block = blocks.find((b) => b.id === blockId)
+    if (!block) return
 
-  // handle mouse move for drawing connections
+    // Calculate position relative to the canvas
+    const canvasRect = canvasRef.current.getBoundingClientRect()
+    
+    // Get connector position from DOM
+    const key = `${blockId}-${isInput ? 'input' : 'output'}-${connectorName}`
+    const savedPosition = connectorsRef.current.get(key)
+    
+    let position
+    if (savedPosition) {
+      position = savedPosition
+    } else {
+      // Fallback to calculation if not in map
+      const x = isInput ? 
+        (connectorRect.left - canvasRect.left) / zoom + pan.x : 
+        (connectorRect.right - canvasRect.left) / zoom + pan.x
+      
+      const y = (connectorRect.top + connectorRect.height/2 - canvasRect.top) / zoom + pan.y
+      
+      position = { x, y }
+    }
+
+    setConnectingFrom({
+      blockId,
+      isInput,
+      connectorName,
+      x: position.x,
+      y: position.y,
+    })
+
+    setConnectingTo(position)
+    setIsConnecting(true)
+  }, [blocks, zoom, pan])
+  
+  // Handle mouse movement when creating connections with improved connector highlighting
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isConnecting && connectingFrom) {
-        // Calculate position relative to the canvas
+        // Calculate position relative to the canvas with proper zoom and pan adjustment
         const canvasRect = canvasRef.current.getBoundingClientRect()
-        const canvasMouseX = (e.clientX - canvasRect.left) / zoom
-        const canvasMouseY = (e.clientY - canvasRect.top) / zoom
+        const canvasMouseX = (e.clientX - canvasRect.left) / zoom + pan.x
+        const canvasMouseY = (e.clientY - canvasRect.top) / zoom + pan.y
         
-        setConnectingTo({ 
-          x: canvasMouseX + pan.x, 
-          y: canvasMouseY + pan.y 
-        })
+        setConnectingTo({ x: canvasMouseX, y: canvasMouseY })
         
         // Highlight potential connection targets
-        highlightPotentialTargets(canvasMouseX, canvasMouseY)
-      }
-    }
-
-    const handleMouseUp = (e) => {
-      if (isConnecting) {
-        // Try to find if we're over a valid connector
-        const targetConnector = findConnectorUnderMouse(e)
-        
-        if (targetConnector) {
-          // Complete the connection to this connector
-          handleCompleteConnection(
-            targetConnector.blockId, 
-            targetConnector.isInput, 
-            targetConnector.connectorName
-          )
-        } else {
-          // Cancel the connection
-          setIsConnecting(false)
-          setConnectingFrom(null)
-        }
-        
-        // Remove any highlights
-        document.querySelectorAll('.connector-highlight').forEach(el => {
-          el.classList.remove('connector-highlight')
-        })
+        highlightPotentialTargets(e.clientX, e.clientY)
       }
     }
     
-    // Highlight potential connection targets
+    // Improved connector highlighting with better distance calculation
     const highlightPotentialTargets = (mouseX, mouseY) => {
       // First remove all highlights
       document.querySelectorAll('.connector-highlight').forEach(el => {
@@ -388,10 +485,14 @@ const Workspace = () => {
       
       // Get all potential connectors
       const allConnectors = document.querySelectorAll('.connector')
+      let closestConnector = null
+      let minDistance = Infinity
       
       allConnectors.forEach(connectorEl => {
         // Skip if this is the source connector
-        const blockId = connectorEl.closest('.block').dataset.blockId
+        const blockId = connectorEl.closest('.block')?.dataset.blockId
+        if (!blockId) return
+        
         const isInput = connectorEl.classList.contains('input')
         const connectorName = connectorEl.dataset.connectorName
         
@@ -404,60 +505,71 @@ const Workspace = () => {
         // Inputs can only connect to outputs and vice versa
         if (connectingFrom.isInput === isInput) return
         
-        // If the connector is close enough to the mouse, highlight it
+        // Calculate distance to connector
         const rect = connectorEl.getBoundingClientRect()
-        const canvasRect = canvasRef.current.getBoundingClientRect()
-        
-        const connectorX = (rect.left - canvasRect.left + rect.width/2) / zoom
-        const connectorY = (rect.top - canvasRect.top + rect.height/2) / zoom
+        const connectorX = rect.left + rect.width / 2
+        const connectorY = rect.top + rect.height / 2
         
         const distance = Math.sqrt(
           Math.pow(mouseX - connectorX, 2) + 
           Math.pow(mouseY - connectorY, 2)
         )
         
-        if (distance < 30) {  
-          connectorEl.classList.add('connector-highlight')
-          setValidConnection(true)
-          // fix for mouse drag issues, test later
-          
-          // uupdate connecting line end point to snap to this connector
-          setConnectingTo({
-            x: connectorX + pan.x,
-            y: connectorY + pan.y
-          })
+        // Track the closest connector
+        if (distance < 50 && distance < minDistance) { // Increased detection radius
+          minDistance = distance
+          closestConnector = {
+            element: connectorEl,
+            blockId,
+            isInput,
+            connectorName
+          }
         }
       })
-    }
-    
-    // Find a connector element under the mouse
-    const findConnectorUnderMouse = (e) => {
-      const allConnectors = document.querySelectorAll('.connector')
       
-      for (const connectorEl of allConnectors) {
-        const rect = connectorEl.getBoundingClientRect()
+      // Highlight the closest connector if one is found
+      if (closestConnector) {
+        closestConnector.element.classList.add('connector-highlight')
+        setValidConnection(true)
         
-        if (e.clientX >= rect.left && e.clientX <= rect.right &&
-            e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          
-          const blockId = connectorEl.closest('.block').dataset.blockId
-          const isInput = connectorEl.classList.contains('input')
-          const connectorName = connectorEl.dataset.connectorName
-          
-          // don't allow connecting to self or same type (input->input or output->output)
-          if (connectingFrom.blockId === blockId && 
-              connectingFrom.isInput === isInput) {
-            return null
-          }
-          
-          // Inputs can only connect to outputs and vice versa
-          if (connectingFrom.isInput === isInput) return null
-          
-          return { blockId, isInput, connectorName }
-        }
+        // Update connecting line end point to snap to this connector
+        const rect = closestConnector.element.getBoundingClientRect()
+        const canvasRect = canvasRef.current.getBoundingClientRect()
+        
+        // Calculate proper position based on connector type (input vs output)
+        const x = closestConnector.isInput 
+          ? (rect.left - canvasRect.left) / zoom + pan.x
+          : (rect.right - canvasRect.left) / zoom + pan.x
+        
+        const y = (rect.top + rect.height/2 - canvasRect.top) / zoom + pan.y
+        
+        setConnectingTo({ x, y })
       }
-      
-      return null
+    }
+
+    const handleMouseUp = (e) => {
+      if (isConnecting) {
+        // Find highlighted connector
+        const highlightedConnector = document.querySelector('.connector-highlight')
+        
+        if (highlightedConnector) {
+          const blockId = highlightedConnector.closest('.block').dataset.blockId
+          const isInput = highlightedConnector.classList.contains('input')
+          const connectorName = highlightedConnector.dataset.connectorName
+          
+          // Complete the connection
+          handleCompleteConnection(blockId, isInput, connectorName)
+        } else {
+          // Cancel the connection
+          setIsConnecting(false)
+          setConnectingFrom(null)
+        }
+        
+        // Remove any highlights
+        document.querySelectorAll('.connector-highlight').forEach(el => {
+          el.classList.remove('connector-highlight')
+        })
+      }
     }
 
     if (isConnecting) {
@@ -471,79 +583,61 @@ const Workspace = () => {
     }
   }, [isConnecting, connectingFrom, zoom, pan, handleCompleteConnection])
 
-  // handle starting a connection
-  const handleStartConnection = (blockId, isInput, connectorName, connectorRect) => {
-    const block = blocks.find((b) => b.id === blockId)
-    if (!block) return
-
-    // calculates the position relative to the canvas
-    const canvasRect = canvasRef.current.getBoundingClientRect()
-    
-    const x = isInput ? 
-      connectorRect.left - canvasRect.left + pan.x : 
-      connectorRect.right - canvasRect.left + pan.x
-    
-    const y = connectorRect.top + connectorRect.height/2 - canvasRect.top + pan.y
-
-    setConnectingFrom({
-      blockId,
-      isInput,
-      connectorName,
-      x,
-      y,
-    })
-
-    setConnectingTo({ x, y })
-    setIsConnecting(true)
-  }
-
-  // handle canvas mouse events for panning
-  const handleCanvasMouseDown = (e) => {
-    if (e.button === 0) {  // left mouse button
+  // Improved canvas mouse event handling for panning
+  const handleCanvasMouseDown = useCallback((e) => {
+    if (e.button === 0) {  // Left mouse button
+      // Only initiate drag if clicking directly on canvas background (not on a block or connection)
       if (e.target.classList.contains("canvas") || 
           e.target.classList.contains("canvas-content")) {
         setIsDraggingCanvas(true)
         setDragStart({ x: e.clientX, y: e.clientY })
         e.target.style.cursor = "grabbing"
         
-        // deselects any selected items when clicking on canvas
+        // Deselect any selected items when clicking on canvas
         setSelectedBlock(null)
         setSelectedConnection(null)
       }
     }
-  }
+  }, [])
 
-  const handleCanvasMouseMove = (e) => {
+  const handleCanvasMouseMove = useCallback((e) => {
     if (isDraggingCanvas) {
       const dx = (e.clientX - dragStart.x) / zoom
       const dy = (e.clientY - dragStart.y) / zoom
-      setPan({ x: pan.x + dx, y: pan.y + dy })
+      setPan(prevPan => ({ 
+        x: prevPan.x + dx, 
+        y: prevPan.y + dy 
+      }))
       setDragStart({ x: e.clientX, y: e.clientY })
     }
-  }
+  }, [isDraggingCanvas, dragStart, zoom])
 
-  const handleCanvasMouseUp = () => {
-    setIsDraggingCanvas(false)
-    document.querySelectorAll(".canvas, .canvas-content").forEach(el => {
-      el.style.cursor = "default"
-    })
-  }
-
-  // handles zooming with mouse wheel
-  const handleWheel = (e) => {
+  const handleCanvasMouseUp = useCallback(() => {
+    if (isDraggingCanvas) {
+      setIsDraggingCanvas(false)
+      document.querySelectorAll(".canvas, .canvas-content").forEach(el => {
+        el.style.cursor = "default"
+      })
+      
+      // Force connector position update after panning
+      setNeedsConnectorUpdate(true)
+    }
+  }, [isDraggingCanvas])
+  
+  // Optimized wheel handling for smoother zooming
+  const handleWheel = useCallback((e) => {
     e.preventDefault()
     
-    // Calculate position to zoom around the mouse pos
+    // Calculate position to zoom around (mouse position)
     const canvasRect = canvasRef.current.getBoundingClientRect()
     const mouseX = (e.clientX - canvasRect.left) / zoom
     const mouseY = (e.clientY - canvasRect.top) / zoom
     
-    // calculates zoom delta
+    // Calculate zoom delta with smoother increments
     const delta = e.deltaY > 0 ? -0.05 : 0.05
     const newZoom = Math.max(0.2, Math.min(2, zoom + delta))
     
     // Adjust pan to zoom toward mouse position
-    // my curren math implementation ensures the point under the mouse stays under the mouse
     if (newZoom !== zoom) {
       const zoomRatio = newZoom / zoom
       const newPanX = mouseX - (mouseX - pan.x) * zoomRatio
@@ -551,60 +645,70 @@ const Workspace = () => {
       
       setPan({ x: newPanX, y: newPanY })
       setZoom(newZoom)
+      
+      // Force connector positions update after zoom
+      setNeedsConnectorUpdate(true)
     }
-  }
+  }, [zoom, pan])
 
-  // handle block selection
-  const handleBlockClick = (blockId) => {
+  // Block selection with proper event propagation
+  const handleBlockClick = useCallback((blockId) => {
     setSelectedBlock(blockId)
     setSelectedConnection(null)
-  }
+  }, [])
   
-  // Handle connection selection
-  const handleConnectionClick = (connectionId) => {
+  // Connection selection with proper event propagation
+  const handleConnectionClick = useCallback((connectionId) => {
     setSelectedConnection(connectionId)
     setSelectedBlock(null)
-  }
+  }, [])
 
-  // handle duplicate block
-  const handleDuplicateBlock = () => {
+  // Duplicate selected block with proper positioning
+  const handleDuplicateBlock = useCallback(() => {
     if (selectedBlock) {
       const blockToDuplicate = blocks.find(block => block.id === selectedBlock)
       if (blockToDuplicate) {
         const newBlock = {
           ...blockToDuplicate,
           id: uuidv4(),
-          left: blockToDuplicate.left + 20,
-          top: blockToDuplicate.top + 20
+          left: blockToDuplicate.left + grid.size * 2,
+          top: blockToDuplicate.top + grid.size * 2
         }
-        setBlocks([...blocks, newBlock])
+        setBlocks(prevBlocks => [...prevBlocks, newBlock])
         setSelectedBlock(newBlock.id)
+        
+        // Force connector position update
+        setNeedsConnectorUpdate(true)
       }
     }
-  }
+  }, [selectedBlock, blocks, grid.size])
 
-  // Toggle grid snap
-  const toggleSnapToGrid = () => {
-    setSnapToGrid(!snapToGrid)
-  }
+  // Toggle grid snap with visual feedback
+  const toggleSnapToGrid = useCallback(() => {
+    setSnapToGrid(prev => !prev)
+  }, [])
   
   // Toggle grid visibility
-  const toggleGrid = () => {
-    setGrid({...grid, enabled: !grid.enabled})
-  }
+  const toggleGrid = useCallback(() => {
+    setGrid(prev => ({...prev, enabled: !prev.enabled}))
+  }, [])
 
-  // Reset canvas view
-  const resetView = () => {
+  // Reset canvas view and maintain connections
+  const resetView = useCallback(() => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
-  }
+    
+    // Force connector position update after reset
+    setNeedsConnectorUpdate(true)
+  }, [])
 
-  // handle saving the AVS configuration
-  const handleSaveAVS = () => {
+  // Handle saving the AVS configuration
+  const handleSaveAVS = useCallback(() => {
     const avsConfig = {
       blocks: blocks.map(block => ({
         id: block.id,
         type: block.blockType,
+        subType: block.subType,
         position: { x: block.left, y: block.top }
       })),
       connections: connections.map(conn => ({
@@ -617,25 +721,22 @@ const Workspace = () => {
     }
     
     console.log("Saving AVS configuration:", avsConfig)
+    // Here you would integrate with your backend API
     alert("AVS configuration saved!")
-  }
+  }, [blocks, connections])
 
-  // Custom drag layer for preview
-  const renderCustomDragLayer = () => {
-    return <CustomDragLayer blocks={blocks} snapToGrid={snapToGrid} gridSize={grid.size} />
-  }
-  
   // Get connection pointer classname based on valid status
-  const getConnectionPointerClass = () => {
+  const getConnectionPointerClass = useCallback(() => {
     if (!isConnecting) return ""
     return validConnection ? "connection-valid" : "connection-invalid"
-  }
-
+  }, [isConnecting, validConnection])
+  
+  // Render the workspace with optimized layout and performance
   return (
     <div className="workspace-container">
       <div className={`sidebar ${isPanelOpen ? "open" : "closed"}`}>
         <div className="sidebar-header">
-          <h2>Components</h2>
+          <h2>AVS Components</h2>
           <button className="toggle-sidebar" onClick={() => setIsPanelOpen(!isPanelOpen)}>
             {isPanelOpen ? "◀" : "▶"}
           </button>
@@ -687,8 +788,8 @@ const Workspace = () => {
         className="canvas-container" 
         onWheel={handleWheel}
       >
-        {/* Add custom drag layer */}
-        {renderCustomDragLayer()}
+        {/* Custom drag layer for preview */}
+        <CustomDragLayer blocks={blocks} snapToGrid={snapToGrid} gridSize={grid.size} />
         
         <div className="canvas-controls">
           <button onClick={() => setZoom(Math.min(2, zoom + 0.1))} title="Zoom In">+</button>
@@ -759,6 +860,8 @@ const Workspace = () => {
             className={`canvas-content ${grid.enabled ? 'grid-enabled' : ''}`}
             style={{
               transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+              width: canvasSize.width,
+              height: canvasSize.height,
             }}
           >
             <svg className="connections-layer">
@@ -803,7 +906,7 @@ const Workspace = () => {
                 left={block.left}
                 top={block.top}
                 blockType={block.blockType}
-                blockInfo={BLOCK_TYPES[block.blockType]}
+                blockInfo={getBlockInfo(block.blockType, block.subType)}
                 isInPalette={false}
                 onConnect={isConnecting ? handleCompleteConnection : handleStartConnection}
                 selected={selectedBlock === block.id}

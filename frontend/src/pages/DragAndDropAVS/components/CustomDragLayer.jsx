@@ -1,7 +1,7 @@
 "use client"
 
 import { useDragLayer } from "react-dnd"
-import { BLOCK_TYPES } from "./BlockTypes" 
+import { getBlockInfo } from "./BlockTypes" 
 
 const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
   const {
@@ -18,7 +18,7 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
     isDragging: monitor.isDragging(),
   }))
 
-  // doesntt render if not dragging or missing offsets
+  // Don't render if not dragging or missing offsets
   if (!isDragging || !initialOffset || !currentOffset) {
     return null
   }
@@ -29,22 +29,20 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
     return Math.round(value / gridSize) * gridSize
   }
 
-  // calculates dragged item position
+  // Calculate dragged item position with improved positioning
   const getItemStyles = () => {
     if (!initialOffset || !currentOffset) {
-      return {
-        display: "none",
-      }
+      return { display: "none" }
     }
 
     let { x, y } = currentOffset
 
     if (item.isInPalette) {
-      // for new blocks, center under the cursor
+      // For new blocks, center under the cursor
       x -= item.width ? item.width / 2 : 100
-      y -= 30 // offsets to position at top of block
+      y -= 30 // Offset to position at top of block
     } else {
-      // for existing blocks, maintain the same relative position
+      // For existing blocks, maintain the same relative position
       const deltaX = x - initialOffset.x
       const deltaY = y - initialOffset.y
       
@@ -52,7 +50,7 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
       y = item.top + deltaY
     }
 
-    // apply grid snapping if enabled by the user
+    // Apply grid snapping if enabled
     if (snapToGrid) {
       x = snapToGridPoint(x)
       y = snapToGridPoint(y)
@@ -61,13 +59,17 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
     return {
       transform: `translate(${x}px, ${y}px)`,
       WebkitTransform: `translate(${x}px, ${y}px)`,
+      pointerEvents: 'none',
     }
   }
 
+  // Render the preview based on the item type
   const renderItem = () => {
     if (itemType !== "block") return null
 
-    const blockInfo = BLOCK_TYPES[item.blockType]
+    // Get block info, including potential subtype
+    const blockInfo = getBlockInfo(item.blockType, item.subType)
+    if (!blockInfo) return null
     
     return (
       <div 
@@ -77,7 +79,7 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
           opacity: 0.8,
           backgroundColor: `${blockInfo.color}22`,
           border: `2px solid ${blockInfo.color}`,
-          boxShadow: `0 0 10px ${blockInfo.color}`, 
+          boxShadow: `0 0 15px ${blockInfo.color}`, 
         }}
       >
         <div className="block-header" style={{ backgroundColor: blockInfo.color }}>
@@ -117,7 +119,7 @@ const CustomDragLayer = ({ blocks, snapToGrid, gridSize = 20 }) => {
     )
   }
 
-  // only render custom layer when dragging comp 
+  // Only render custom layer when dragging
   return (
     <div className="custom-drag-layer">
       <div style={getItemStyles()}>{renderItem()}</div>

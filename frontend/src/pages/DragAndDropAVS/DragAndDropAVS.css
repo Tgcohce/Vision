@@ -5,11 +5,14 @@
   --figma-color: #c59dd8;
   --figmaTwo-color: #3e2c4d;
   --figmaThree-color: #06091c;
-  --grid-color: rgba(197, 157, 216, 0.1);
-  --block-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --grid-color: rgba(197, 157, 216, 0.07);
+  --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 60px;
   --header-height: 50px;
+  --connection-active-color: #ffcc00;
+  --connection-valid-color: #4caf50;
+  --connection-invalid-color: #f44336;
 }
 
 .drag-and-drop-avs {
@@ -23,35 +26,25 @@
   overflow: hidden;
 }
 
-/* grid lines overlay */
-.canvas::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to right, var(--grid-color) 1px, transparent 1px) 0 0 / 50px 50px,
-    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px) 0 0 / 50px 50px;
-  pointer-events: none;
-}
-
-/* 2orkspace layout for the grid  */
+/* Workspace layout */
 .workspace-container {
   display: flex;
   height: calc(100vh - var(--header-height));
   width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
+/* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
   background-color: rgba(0, 0, 0, 0.7);
   border-right: 1px solid rgba(197, 157, 216, 0.2);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
   overflow: hidden;
+  z-index: 100;
 }
 
 .sidebar.closed {
@@ -96,6 +89,13 @@
   padding: 15px;
   border-top: 1px solid rgba(197, 157, 216, 0.2);
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 5px;
   justify-content: center;
 }
 
@@ -104,16 +104,43 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .canvas {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-content {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 5000px;
   height: 5000px;
-  transform-origin: top left;
+  transform-origin: 0 0;
   background-color: transparent;
+}
+
+/* Grid lines overlay */
+.canvas-content.grid-enabled::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(to right, rgba(197, 157, 216, 0.15) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(to bottom, rgba(197, 157, 216, 0.15) 1px, transparent 1px) 0 0 / 100px 100px;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .canvas-controls {
@@ -126,6 +153,13 @@
   padding: 10px;
   border-radius: 8px;
   z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.canvas-controls-divider {
+  width: 1px;
+  background-color: rgba(197, 157, 216, 0.3);
+  margin: 0 5px;
 }
 
 .canvas-controls button {
@@ -139,12 +173,18 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   padding: 0 10px;
 }
 
-.canvas-controls button:hover {
+.canvas-controls button:hover:not(.disabled) {
   background-color: rgba(197, 157, 216, 0.4);
+  transform: translateY(-2px);
+}
+
+.canvas-controls button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .canvas-controls span {
@@ -155,15 +195,59 @@
   color: var(--text-color);
 }
 
+.control-button {
+  position: relative;
+}
+
+.control-button::before {
+  content: attr(title);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.control-button:hover::before {
+  opacity: 1;
+}
+
 .delete-button {
-  background-color: rgba(197, 157, 216, 0.2) !important;
-  border-color: var(--figma-color) !important;
+  background-color: rgba(244, 67, 54, 0.2) !important;
+  border-color: #f44336 !important;
 }
 
 .delete-button:hover {
-  background-color: rgba(197, 157, 216, 0.4) !important;
+  background-color: rgba(244, 67, 54, 0.4) !important;
 }
 
+.duplicate-button {
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  border-color: #4caf50 !important;
+}
+
+.duplicate-button:hover {
+  background-color: rgba(76, 175, 80, 0.4) !important;
+}
+
+/* Connection cursor states */
+.canvas.connection-valid {
+  cursor: crosshair;
+}
+
+.canvas.connection-invalid {
+  cursor: not-allowed;
+}
+
+/* Blocks */
 .block {
   position: absolute;
   width: 200px;
@@ -171,34 +255,45 @@
   box-shadow: var(--block-shadow);
   background-color: rgba(0, 0, 0, 0.7);
   overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.1s, opacity 0.2s;
+  transition: all 0.2s ease;
   will-change: transform;
   touch-action: none;
+  z-index: 10;
 }
 
 .block.selected {
-  box-shadow: 0 0 0 2px var(--figma-color), var(--block-shadow);
+  z-index: 20;
 }
 
 .block.dragging {
   opacity: 0.7;
-  transform: scale(1.02);
+  transform: scale(1.05);
+  z-index: 100;
 }
 
 .palette-block {
   position: relative;
   margin-bottom: 15px;
   cursor: grab;
+  transition: transform 0.2s;
+}
+
+.palette-block:hover {
+  transform: translateX(5px);
+}
+
+.palette-block:active {
+  cursor: grabbing;
 }
 
 .canvas-block:hover {
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
 }
 
 .block-header {
   display: flex;
   align-items: center;
-  justify-content: center; 
+  justify-content: center;
   padding: 10px;
   color: white;
   border-top-left-radius: 8px;
@@ -227,39 +322,74 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+  position: relative;
 }
 
 .connector {
+  position: relative;
   display: flex;
   align-items: center;
-  font-size: 0.8rem;
-  color: #ccc;
-  cursor: pointer;
+  padding: 8px;
+  cursor: crosshair;
+  transition: all 0.2s ease;
+  height: 24px;
+  border-radius: 12px;
 }
 
-.connector:hover .connector-dot {
-  transform: scale(1.2);
-  background-color: var(--figma-color);
+.connector:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .connector.input {
   justify-content: flex-start;
+  padding-left: 0;
+  margin-left: -10px;
 }
 
 .connector.output {
   justify-content: flex-end;
+  padding-right: 0;
+  margin-right: -10px;
 }
 
 .connector-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background-color: #ccc;
-  transition: transform 0.2s, background-color 0.2s;
+  background-color: var(--figma-color);
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.connector.input .connector-dot {
+  box-shadow: -2px 0 5px rgba(197, 157, 216, 0.3);
+}
+
+.connector.output .connector-dot {
+  box-shadow: 2px 0 5px rgba(197, 157, 216, 0.3);
+}
+
+.connector:hover .connector-dot {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px var(--figma-color);
+}
+
+.connector.connector-highlight .connector-dot {
+  transform: scale(1.5);
+  box-shadow: 0 0 15px var(--connection-valid-color);
+  background-color: var(--connection-valid-color);
 }
 
 .connector-label {
-  margin: 0 5px;
+  margin: 0 8px;
+  font-size: 0.8rem;
+  color: #ccc;
+  transition: color 0.2s;
+}
+
+.connector:hover .connector-label {
+  color: white;
 }
 
 /* Connections */
@@ -270,27 +400,90 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 5;
 }
 
 .connection path {
-  pointer-events: none;
-  transition: stroke-width 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.connection path:hover {
-  stroke-width: 3;
+.connection-glow {
+  filter: drop-shadow(0 0 5px var(--figma-color));
 }
 
 .connection-delete {
-  cursor: pointer;
   pointer-events: all;
-  transition: r 0.2s, fill 0.2s;
-  filter: drop-shadow(0 0 2px var(--figma-color));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.connection:hover .connection-delete {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 .connection-delete:hover {
-  r: 7;
+  transform: scale(1.4) !important;
+}
+
+.connection-delete .delete-bg {
+  transition: fill 0.2s ease;
+}
+
+.connection-delete:hover .delete-bg {
   fill: #ff4444;
+}
+
+/* Connection flow animation */
+.connection-flow {
+  animation: flowDash 30s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.connection:hover .connection-flow,
+.connection.connection-active .connection-flow {
+  opacity: 0.6;
+}
+
+@keyframes flowDash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+/* Drag preview layer */
+.custom-drag-layer {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-block {
+  position: relative;
+  transform-origin: top left;
+}
+
+/* Connection in progress */
+.connecting-line {
+  pointer-events: none;
+  animation: pulseLine 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseLine {
+  0%, 100% { stroke-opacity: 0.3; }
+  50% { stroke-opacity: 1; }
+}
+
+/* Active button state */
+.action-button.active {
+  background-color: var(--figma-color);
+  color: #000;
 }
 
 /* Action buttons */
@@ -303,21 +496,29 @@
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.2s;
-  border: none;
+  transition: all 0.2s;
+  border: 1px solid var(--figma-color);
+  background-color: rgba(197, 157, 216, 0.2);
+  color: var(--text-color);
+}
+
+.action-button:hover {
+  background-color: rgba(197, 157, 216, 0.4);
+  transform: translateY(-2px);
 }
 
 .save-button {
   background-color: var(--figma-color);
   color: #000;
   font-weight: 600;
+  margin-top: 10px;
 }
 
 .save-button:hover {
   background-color: #d7b5e9;
 }
 
-/* responsive fixes */
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .sidebar {
     position: absolute;
@@ -339,5 +540,3 @@
     padding: 10px;
   }
 }
-
-

@@ -1,6 +1,6 @@
 "use client";
 
-// Block types with their properties and subtypes
+// Block types with their properties, subtypes, and integration examples
 export const BLOCK_TYPES = {
   VALIDATOR: {
     type: "validator",
@@ -199,13 +199,11 @@ export const BLOCK_TYPES = {
       },
     },
   },
-
-  // Example of adding Othentic-based "Governance"
   GOVERNANCE: {
     type: "governance",
     name: "Othentic Governance",
     color: "#FF5733",
-    description: "Manages operator registration, staking, and consensus logic (Othentic integration)",
+    description: "Manages operator registration, staking, and consensus using Othentic protocols",
     inputs: ["operator_registration", "governance_params"],
     outputs: ["governance_events", "rewards_distribution"],
     subtypes: {
@@ -214,52 +212,116 @@ export const BLOCK_TYPES = {
         description: "Basic operator registration and governance logic using Othentic hooks",
         inputs: ["operator_registration"],
         outputs: ["governance_events"],
-        color: "#FF5733",
+        color: "#FF5733"
       },
       GOVERNANCE_ENHANCED: {
         name: "Enhanced Governance",
-        description: "Advanced governance logic with pre/post execution hooks for operator registration",
+        description: "Advanced governance with pre/post execution hooks for operator registration",
         inputs: ["operator_registration", "custom_logic"],
         outputs: ["governance_events", "analytics"],
-        color: "#C70039",
-      },
-    },
+        color: "#C70039"
+      }
+    }
   },
-
-  // Example of adding AI / Gaia integration
   AI: {
     type: "ai",
     name: "AI Integration",
     color: "#2ecc71",
-    description: "Provides advanced AI analytics or anomaly detection (Gaia integration)",
+    description: "Provides advanced AI analytics and anomaly detection via Gaia integration",
     inputs: ["data"],
     outputs: ["analytics"],
     subtypes: {
       GAIA_STANDARD: {
         name: "Gaia Standard AI",
-        description: "Uses Gaia for basic anomaly detection and analytics",
+        description: "Standard anomaly detection and analytics using Gaia",
         inputs: ["data"],
         outputs: ["analytics"],
-        color: "#27ae60",
+        color: "#27ae60"
       },
       GAIA_ADVANCED: {
         name: "Gaia Advanced AI",
-        description: "Advanced AI with deeper insights and adaptive learning",
+        description: "Enhanced AI integration with deeper insights and adaptive learning",
         inputs: ["data", "metadata"],
         outputs: ["analytics", "insights"],
-        color: "#229954",
-      },
-    },
+        color: "#229954"
+      }
+    }
   },
+  MESSAGE_HANDLER_L1: {
+    type: "l1_message_handler",
+    name: "Othentic L1 Message Handler",
+    color: "#FF8C00",
+    description: "Handles cross-chain messages from L2 to L1 (e.g., operator updates, payment notifications)",
+    inputs: ["L2 message"],
+    outputs: ["notification"],
+    subtypes: {
+      MESSAGE_HANDLER_L1_STANDARD: {
+        name: "Standard L1 Handler",
+        description: "Standard handler for L2-to-L1 message processing",
+        inputs: ["L2 message"],
+        outputs: ["notification"],
+        color: "#FF8C00"
+      }
+    }
+  },
+  MESSAGE_HANDLER_L2: {
+    type: "l2_message_handler",
+    name: "Othentic L2 Message Handler",
+    color: "#FF4500",
+    description: "Handles cross-chain messages from L1 to L2 (e.g., forwarding payment or slashing requests)",
+    inputs: ["L1 message"],
+    outputs: ["notification"],
+    subtypes: {
+      MESSAGE_HANDLER_L2_STANDARD: {
+        name: "Standard L2 Handler",
+        description: "Standard handler for L1-to-L2 message processing",
+        inputs: ["L1 message"],
+        outputs: ["notification"],
+        color: "#FF4500"
+      }
+    }
+  },
+  ATTESTATION_CENTER: {
+    type: "attestation_center",
+    name: "Attestation Center",
+    color: "#2F4F4F",
+    description: "Records task submissions and verifies task execution on-chain, managing rewards and penalties",
+    inputs: ["task submission"],
+    outputs: ["task validation"],
+    subtypes: {
+      ATTESTATION_CENTER_STANDARD: {
+        name: "Standard Attestation Center",
+        description: "Handles task verification and event recording",
+        inputs: ["task submission"],
+        outputs: ["task validation"],
+        color: "#2F4F4F"
+      }
+    }
+  },
+  REGISTRY: {
+    type: "registry",
+    name: "Othentic Registry",
+    color: "#4B0082",
+    description: "Singleton contract that manages AVS governance registration and integration with shared security protocols",
+    inputs: ["registration"],
+    outputs: ["governance"],
+    subtypes: {
+      REGISTRY_STANDARD: {
+        name: "Standard Registry",
+        description: "Manages registration of AVS governance contracts",
+        inputs: ["registration"],
+        outputs: ["governance"],
+        color: "#4B0082"
+      }
+    }
+  }
 };
 
 // Helper function to get a specific subtype
 export const getBlockSubtype = (blockType, subType) => {
   if (!blockType || !subType) return null;
-
   const mainType = BLOCK_TYPES[blockType];
   if (!mainType) return null;
-
   return mainType.subtypes && mainType.subtypes[subType]
     ? mainType.subtypes[subType]
     : mainType;

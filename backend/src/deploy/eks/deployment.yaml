@@ -1,26 +1,186 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: offchain-service
+  name: avs-offchain-service
   labels:
-    app: offchain-service
+    app: avs-offchain-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: offchain-service
+      app: avs-offchain-service
   template:
     metadata:
       labels:
-        app: offchain-service
+        app: avs-offchain-service
     spec:
       containers:
-        - name: offchain-service
-          image: your-docker-registry/offchain-service:latest
+        - name: avs-offchain-service
+          image: your-docker-registry/avs-offchain-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
+              name: api
+            - containerPort: 3001
+              name: monitoring
           env:
+            - name: NODE_ENV
+              value: "production"
             - name: ENVIRONMENT
               value: "testnet"
-            - name: STAKING_REQUIREMENT
-              value: "1500"
+            - name: PORT
+              value: "3000"
+            - name: MONITORING_PORT
+              value: "3001"
+            - name: PROVIDER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: avs-secrets
+                  key: provider_url
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: avs-secrets
+                  key: telegram_bot_token
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: avs-secrets
+                  key: telegram_chat_id
+            - name: GOVERNANCE_CONTRACT_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: avs-config
+                  key: governance_contract_address
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/src/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: avs-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avs-offchain-service
+  labels:
+    app: avs-offchain-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+    - port: 3001
+      targetPort: 3001
+      protocol: TCP
+      name: monitoring
+  selector:
+    app: avs-offchain-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: avs-config
+data:
+  config.json: |
+    {
+      "networkId": "avs-network-001",
+      "environment": "testnet",
+      "globalDefaults": {
+        "timeout": 3000,
+        "retryAttempts": 3
+      },
+      "nodes": [
+        {
+          "id": "node_1",
+          "type": "governance",
+          "properties": {
+            "votingThreshold": 0.67,
+            "stakingRequirement": 1000
+          },
+          "integration": {
+            "provider": "Othentic",
+            "contractAddress": "${GOVERNANCE_CONTRACT_ADDRESS}"
+          },
+          "dependencies": ["node_2", "node_3"]
+        },
+        {
+          "id": "node_2",
+          "type": "attestation",
+          "properties": {
+            "minValidators": 5
+          },
+          "integration": {
+            "provider": "Othentic",
+            "contractAddress": "${ATTESTATION_CONTRACT_ADDRESS}"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "node_3",
+          "type": "p2p",
+          "properties": {
+            "protocol": "libp2p",
+            "maxPeers": 20
+          },
+          "integration": {
+            "provider": "P2P"
+          },
+          "dependencies": []
+        }
+      ],
+      "connections": [
+        {
+          "source": "node_2",
+          "target": "node_1",
+          "channel": "control"
+        },
+        {
+          "source": "node_3",
+          "target": "node_1",
+          "channel": "message"
+        }
+      ]
+    }
+  notifications.json: |
+    {
+      "telegram": {
+        "enabled": true,
+        "botToken": "${TELEGRAM_BOT_TOKEN}",
+        "chatId": "${TELEGRAM_CHAT_ID}"
+      }
+    }
+  governance_contract_address: "0x0000000000000000000000000000000000000001"
+  attestation_contract_address: "0x0000000000000000000000000000000000000002"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: avs-secrets
+type: Opaque
+data:
+  provider_url: BASE64_ENCODED_PROVIDER_URL
+  telegram_bot_token: BASE64_ENCODED_TELEGRAM_BOT_TOKEN
+  telegram_chat_id: BASE64_ENCODED_TELEGRAM_CHAT_ID

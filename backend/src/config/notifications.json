@@ -1,0 +1,26 @@
+{
+  "telegram": {
+    "enabled": true,
+    "botToken": "YOUR_TELEGRAM_BOT_TOKEN",
+    "chatId": "YOUR_TELEGRAM_CHAT_ID"
+  },
+  "webhooks": [
+    {
+      "name": "Slack",
+      "url": "https://hooks.slack.com/services/YOUR_SLACK_WEBHOOK",
+      "enabled": false
+    }
+  ],
+  "email": {
+    "enabled": false,
+    "host": "smtp.example.com",
+    "port": 587,
+    "secure": true,
+    "auth": {
+      "user": "notifications@example.com",
+      "pass": "YOUR_EMAIL_PASSWORD"
+    },
+    "from": "AVS Notifications <notifications@example.com>",
+    "to": ["admin@example.com"]
+  }
+}

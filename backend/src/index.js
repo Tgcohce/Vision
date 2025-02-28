@@ -8,6 +8,7 @@ const fs = require('fs');
 const { parseAndValidateDesign, normalizeDesign, transformFrontendDesign, saveDesignToConfig } = require('./ir/irCompiler');
 const { generateFromIR } = require('./codegen/hygenWrapper');
 const { deployArtifacts } = require('./deploy/deployOrchestrator');
+const { deployToEKS, getEKSDeploymentStatus } = require('./deploy/eksDeployer');
 const { simulateDeployment } = require('./deploy/simulateAndResolve');
 const { rollbackDeployment } = require('./deploy/rollbackManager');
 const { startMonitoringService } = require('./monitoring/monitoringService');
@@ -176,29 +177,6 @@ app.post('/api/frontend-build', authenticateToken, async (req, res) => {
       return res.status(500).json({ error: `Deployment failed: ${error.message}` });
     }
     
-    // Step 4: Deploy to EKS (optional)
-    if (req.body.deployToEks) {
-      logger.info('Initiating EKS deployment');
-      try {
-        // Here we would typically call AWS SDK to deploy to EKS
-        // For simplicity, we'll just simulate the operation
-        
-        // In a real implementation, you would:
-        // 1. Update the EKS deployment YAML with the deployed contract addresses
-        // 2. Use the AWS SDK to apply the updated deployment
-        // 3. Wait for the deployment to complete
-        
-        // Simulate a delay for deployment
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        logger.info('EKS deployment complete');
-      } catch (error) {
-        logger.error(`EKS deployment failed: ${error.message}`);
-        // We don't want to fail the entire operation if just EKS deployment fails
-        // so we just log the error and continue
-      }
-    }
-    
     // Get the final configuration with all deployed addresses
     const finalConfig = require('./config/config.json');
     
@@ -210,11 +188,25 @@ app.post('/api/frontend-build', authenticateToken, async (req, res) => {
       }
     });
     
+    // Step 4: Deploy to EKS (optional)
+    let eksDeploymentStatus = false;
+    if (req.body.deployToEks) {
+      logger.info('Initiating EKS deployment');
+      try {
+        // Deploy to EKS using the config with deployed contract addresses
+        eksDeploymentStatus = await deployToEKS(finalConfig);
+        logger.info(`EKS deployment ${eksDeploymentStatus ? 'completed successfully' : 'failed'}`);
+      } catch (error) {
+        logger.error(`EKS deployment failed: ${error.message}`);
+        // We don't want to fail the entire operation if just EKS deployment fails
+      }
+    }
+    
     res.status(200).json({
       message: 'AVS build and deployment successful',
       config: finalConfig,
       deployedAddresses,
-      eksDeployed: req.body.deployToEks || false
+      eksDeployed: eksDeploymentStatus
     });
   } catch (error) {
     logger.error(`Build process failed: ${error.message}`);
@@ -250,6 +242,19 @@ app.post('/api/deployment/deploy', authenticateToken, authorizeRole('operator', 
   try {
     await deployArtifacts();
     res.status(200).json({ message: 'Deployment initiated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint to get EKS deployment status
+app.get('/api/deployment/eks/status', authenticateToken, async (req, res) => {
+  try {
+    const status = await getEKSDeploymentStatus();
+    res.status(200).json({
+      message: 'EKS deployment status retrieved successfully',
+      status
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

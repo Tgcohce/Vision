@@ -1,3 +1,4 @@
+// Component imports
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
@@ -686,7 +687,7 @@ const Workspace = () => {
     setPan({ x: 0, y: 0 })
   }, [])
 
-  // Handle saving the AVS configuration
+  // Handle saving the AVS configuration and building with backend
   const handleSaveAVS = useCallback(() => {
     const avsConfig = {
       blocks: blocks.map(block => ({
@@ -705,8 +706,36 @@ const Workspace = () => {
     }
     
     console.log("Saving AVS configuration:", avsConfig)
-    // Here you would integrate with your backend API
-    alert("AVS configuration saved!")
+    
+    // Send the configuration to the backend to generate code with Hygen
+    fetch('http://localhost:3000/api/frontend-build', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Include auth token if needed
+        // 'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        design: {
+          blocks: avsConfig.blocks,
+          connections: avsConfig.connections
+        }
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Success:', data);
+      alert('AVS configuration saved and generated successfully!');
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to generate AVS components');
+    });
   }, [blocks, connections])
 
   // Get connection pointer classname based on valid status

@@ -2,50 +2,50 @@
 
 // Block types with their properties, subtypes, and integration examples
 export const BLOCK_TYPES = {
-  VALIDATOR: {
-    type: "validator",
-    name: "Validator",
+  OPERATOR_ACTION: { // Renamed from VALIDATOR
+    type: "operator_action",
+    name: "Operator Action",
     color: "#7C3AED",
-    description: "Validates transactions and maintains consensus",
+    description: "Represents actions performed by operators (e.g., validations, penalties, consensus decisions)",
     inputs: ["data"],
-    outputs: ["validation"],
+    outputs: ["action"],
     subtypes: {
-      VALIDATOR_STANDARD: {
-        name: "Standard Validator",
-        description: "Standard validator for transaction validation",
+      OPERATOR_STANDARD: {
+        name: "Standard Operator Action",
+        description: "Basic operator actions for transaction validation",
         inputs: ["data"],
-        outputs: ["validation"],
+        outputs: ["action"],
         color: "#7C3AED",
       },
-      VALIDATOR_LIGHT: {
-        name: "Light Validator",
-        description: "Lightweight validator with reduced resource requirements",
+      OPERATOR_LIGHT: {
+        name: "Light Operator Action",
+        description: "Lightweight operator action with reduced resource usage",
         inputs: ["data"],
-        outputs: ["validation"],
+        outputs: ["action"],
         color: "#9361FF",
       },
-      VALIDATOR_ADVANCED: {
-        name: "Advanced Validator",
-        description: "Enhanced validator with advanced security features",
+      OPERATOR_ADVANCED: {
+        name: "Advanced Operator Action",
+        description: "Enhanced operator actions with additional security features",
         inputs: ["data", "metadata"],
-        outputs: ["validation", "analytics"],
+        outputs: ["action", "analytics"],
         color: "#6429E0",
       },
-      VALIDATOR_CUSTOM: {
-        name: "Custom Validator",
-        description: "Customizable validator for specialized validation rules",
+      OPERATOR_CUSTOM: {
+        name: "Custom Operator Action",
+        description: "Customizable operator actions for specialized scenarios",
         inputs: ["data", "rules"],
-        outputs: ["validation", "report"],
+        outputs: ["action", "report"],
         color: "#5B20D9",
       },
-      VALIDATOR_NETWORK: {
-        name: "Network Validator",
-        description: "Validator optimized for network-wide consensus",
+      OPERATOR_NETWORK: {
+        name: "Network Operator Action",
+        description: "Operator actions optimized for network-wide consensus and control",
         inputs: ["data", "network_state"],
-        outputs: ["validation", "status"],
+        outputs: ["action", "status"],
         color: "#8A55F6",
       },
-    },
+    }
   },
   STORAGE: {
     type: "storage",
@@ -83,7 +83,7 @@ export const BLOCK_TYPES = {
         outputs: ["read", "archive_info"],
         color: "#A769C2",
       },
-    },
+    }
   },
   COMPUTE: {
     type: "compute",
@@ -121,7 +121,7 @@ export const BLOCK_TYPES = {
         outputs: ["result"],
         color: "#5D4669",
       },
-    },
+    }
   },
   ORACLE: {
     type: "oracle",
@@ -159,7 +159,7 @@ export const BLOCK_TYPES = {
         outputs: ["defi_data", "risk_metrics"],
         color: "#3B27E2",
       },
-    },
+    }
   },
   CONTRACT: {
     type: "contract",
@@ -197,7 +197,7 @@ export const BLOCK_TYPES = {
         outputs: ["execution", "pending_actions"],
         color: "#242848",
       },
-    },
+    }
   },
   GOVERNANCE: {
     type: "governance",
@@ -285,7 +285,7 @@ export const BLOCK_TYPES = {
     type: "attestation_center",
     name: "Attestation Center",
     color: "#2F4F4F",
-    description: "Records task submissions and verifies task execution on-chain, managing rewards and penalties",
+    description: "Records task submissions, verifies execution on-chain, and manages rewards/penalties",
     inputs: ["task submission"],
     outputs: ["task validation"],
     subtypes: {
@@ -314,14 +314,47 @@ export const BLOCK_TYPES = {
         color: "#4B0082"
       }
     }
+  },
+  TRIGGER: {
+    type: "trigger",
+    name: "Offchain Trigger",
+    color: "#F39C12",
+    description: "Executes off-chain actions such as sending alerts and penalizing operators",
+    inputs: ["event"],
+    outputs: ["action"],
+    subtypes: {
+      TELEGRAM_ALERT: {
+        name: "Telegram Alert",
+        description: "Sends a Telegram message for critical events",
+        inputs: ["event"],
+        outputs: ["notification"],
+        color: "#F39C12"
+      },
+      EMAIL_NOTIFICATION: {
+        name: "Email Notification",
+        description: "Sends an email alert for critical events",
+        inputs: ["event"],
+        outputs: ["notification"],
+        color: "#E67E22"
+      },
+      OPERATOR_PENALTY: {
+        name: "Operator Penalty",
+        description: "Triggers a penalty action for misbehaving operators, visually indicating the issue",
+        inputs: ["operator", "penalty_details"],
+        outputs: ["penalty_execution"],
+        color: "#C0392B"
+      }
+    }
   }
 };
 
 // Helper function to get a specific subtype
 export const getBlockSubtype = (blockType, subType) => {
   if (!blockType || !subType) return null;
+
   const mainType = BLOCK_TYPES[blockType];
   if (!mainType) return null;
+
   return mainType.subtypes && mainType.subtypes[subType]
     ? mainType.subtypes[subType]
     : mainType;
@@ -333,5 +366,6 @@ export const getBlockInfo = (blockType, subType) => {
     const subTypeInfo = getBlockSubtype(blockType, subType);
     if (subTypeInfo) return subTypeInfo;
   }
+
   return BLOCK_TYPES[blockType] || null;
 };

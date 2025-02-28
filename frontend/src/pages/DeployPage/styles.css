@@ -1,0 +1,144 @@
+/* Deploy Page Styles */
+.deploy-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: left;
+}
+
+.deploy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #eaecef;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.deploy-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+/* Wallet Connect Styles */
+.wallet-connect {
+  display: flex;
+  align-items: center;
+}
+
+.connect-button, .disconnect-button {
+  background-color: #61dafb;
+  color: #282c34;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.connect-button:hover {
+  background-color: #4fa8d8;
+}
+
+.disconnect-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.disconnect-button:hover {
+  background-color: #c0392b;
+}
+
+.wallet-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.account {
+  background-color: rgba(97, 218, 251, 0.2);
+  color: #61dafb;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.network {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #666;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.contract-address-input {
+  margin-bottom: 2rem;
+}
+
+.contract-address-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.contract-address-input input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.panels-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.panel {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.instructions {
+  background-color: rgba(52, 152, 219, 0.05);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.instructions p {
+  margin: 0.5rem 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .deploy-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .wallet-connect {
+    margin-top: 1rem;
+    width: 100%;
+  }
+  
+  .connect-button, .disconnect-button {
+    width: 100%;
+  }
+  
+  .wallet-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .panels-container {
+    grid-template-columns: 1fr;
+  }
+}

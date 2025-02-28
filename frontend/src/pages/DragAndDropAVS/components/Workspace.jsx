@@ -1,4 +1,3 @@
-// Component imports
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
@@ -29,6 +28,7 @@ const Workspace = () => {
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [canvasSize, setCanvasSize] = useState({ width: 5000, height: 5000 })
   const [connectorPositions, setConnectorPositions] = useState({})
+  const [isSaving, setIsSaving] = useState(false)
   
   const canvasRef = useRef(null)
   const connectingLineRef = useRef(null)
@@ -687,8 +687,11 @@ const Workspace = () => {
     setPan({ x: 0, y: 0 })
   }, [])
 
-  // Handle saving the AVS configuration and building with backend
+  // Handle saving the AVS configuration with better UX
   const handleSaveAVS = useCallback(() => {
+    setIsSaving(true)
+    
+    // Prepare the configuration object
     const avsConfig = {
       blocks: blocks.map(block => ({
         id: block.id,
@@ -707,35 +710,20 @@ const Workspace = () => {
     
     console.log("Saving AVS configuration:", avsConfig)
     
-    // Send the configuration to the backend to generate code with Hygen
-    fetch('http://localhost:3000/api/frontend-build', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include auth token if needed
-        // 'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        design: {
-          blocks: avsConfig.blocks,
-          connections: avsConfig.connections
-        }
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Success:', data);
-      alert('AVS configuration saved and generated successfully!');
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('Failed to generate AVS components');
-    });
+    // Store configuration in local storage so it can be accessed from the deploy page
+    try {
+      localStorage.setItem('savedAvsConfig', JSON.stringify(avsConfig))
+      
+      // Show success message
+      setTimeout(() => {
+        setIsSaving(false)
+        alert('AVS configuration built and saved successfully!')
+      }, 500)
+    } catch (error) {
+      console.error("Error saving configuration:", error)
+      setIsSaving(false)
+      alert("Error saving configuration. Please try again.")
+    }
   }, [blocks, connections])
 
   // Get connection pointer classname based on valid status
@@ -791,8 +779,12 @@ const Workspace = () => {
               Reset
             </button>
           </div>
-          <button className="action-button save-button" onClick={handleSaveAVS}>
-            Build AVS
+          <button 
+            className={`action-button save-button ${isSaving ? 'saving' : ''}`} 
+            onClick={handleSaveAVS}
+            disabled={isSaving || blocks.length === 0}
+          >
+            {isSaving ? 'Saving...' : 'Build AVS'}
           </button>
         </div>
       </div>

@@ -101,21 +101,30 @@ function LandingPage() {
       </div>
 
       <div ref={faqRef} className="faq-section">
+        <div className="grid-lines"></div>
+        <div className="diagonal-lines"></div>
+
         <div className="faq-content">
           <h2 className="faq-title">Frequently Asked Questions</h2>
-          <div className="faq-grid">
+
+          <div className="faq-container">
             {FAQ_DATA.map((faq, index) => (
               <div
                 key={index}
-                className={`faq-item ${activeQuestion === index ? "active" : ""}`}
+                className={`faq-card ${activeQuestion === index ? "active" : ""}`}
                 onClick={() => setActiveQuestion(activeQuestion === index ? null : index)}
               >
-                <div className="faq-question">
-                  <h3>{faq.question}</h3>
-                  <span className="faq-toggle">{activeQuestion === index ? "−" : "+"}</span>
-                </div>
-                <div className="faq-answer">
-                  <p>{faq.answer}</p>
+                <div className="faq-card-inner">
+                  <div className="faq-question">
+                    <h3>{faq.question}</h3>
+                    <div className="faq-icon">
+                      <span className="faq-icon-line horizontal"></span>
+                      <span className={`faq-icon-line vertical ${activeQuestion === index ? "hidden" : ""}`}></span>
+                    </div>
+                  </div>
+                  <div className="faq-answer">
+                    <p>{faq.answer}</p>
+                  </div>
                 </div>
               </div>
             ))}

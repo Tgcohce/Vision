@@ -223,6 +223,14 @@ export const BLOCK_TYPES = {
       }
     }
   },
+  CUSTOM_BLOCK: {
+    type: "custom_block",
+    name: "Custom Code Block",
+    color: "#FFD700", 
+    description: "Block that allows you to paste or write custom code or logic.",
+    inputs: ["input"],
+    outputs: ["output"],
+  },
   AI: {
     type: "ai",
     name: "AI Integration",

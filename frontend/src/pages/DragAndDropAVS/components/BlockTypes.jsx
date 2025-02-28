@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 // Block types with their properties and subtypes
 export const BLOCK_TYPES = {
@@ -45,7 +45,7 @@ export const BLOCK_TYPES = {
         outputs: ["validation", "status"],
         color: "#8A55F6",
       },
-    }
+    },
   },
   STORAGE: {
     type: "storage",
@@ -83,7 +83,7 @@ export const BLOCK_TYPES = {
         outputs: ["read", "archive_info"],
         color: "#A769C2",
       },
-    }
+    },
   },
   COMPUTE: {
     type: "compute",
@@ -121,7 +121,7 @@ export const BLOCK_TYPES = {
         outputs: ["result"],
         color: "#5D4669",
       },
-    }
+    },
   },
   ORACLE: {
     type: "oracle",
@@ -159,7 +159,7 @@ export const BLOCK_TYPES = {
         outputs: ["defi_data", "risk_metrics"],
         color: "#3B27E2",
       },
-    }
+    },
   },
   CONTRACT: {
     type: "contract",
@@ -197,21 +197,73 @@ export const BLOCK_TYPES = {
         outputs: ["execution", "pending_actions"],
         color: "#242848",
       },
-    }
+    },
   },
-}
+
+  // Example of adding Othentic-based "Governance"
+  GOVERNANCE: {
+    type: "governance",
+    name: "Othentic Governance",
+    color: "#FF5733",
+    description: "Manages operator registration, staking, and consensus logic (Othentic integration)",
+    inputs: ["operator_registration", "governance_params"],
+    outputs: ["governance_events", "rewards_distribution"],
+    subtypes: {
+      GOVERNANCE_STANDARD: {
+        name: "Standard Governance",
+        description: "Basic operator registration and governance logic using Othentic hooks",
+        inputs: ["operator_registration"],
+        outputs: ["governance_events"],
+        color: "#FF5733",
+      },
+      GOVERNANCE_ENHANCED: {
+        name: "Enhanced Governance",
+        description: "Advanced governance logic with pre/post execution hooks for operator registration",
+        inputs: ["operator_registration", "custom_logic"],
+        outputs: ["governance_events", "analytics"],
+        color: "#C70039",
+      },
+    },
+  },
+
+  // Example of adding AI / Gaia integration
+  AI: {
+    type: "ai",
+    name: "AI Integration",
+    color: "#2ecc71",
+    description: "Provides advanced AI analytics or anomaly detection (Gaia integration)",
+    inputs: ["data"],
+    outputs: ["analytics"],
+    subtypes: {
+      GAIA_STANDARD: {
+        name: "Gaia Standard AI",
+        description: "Uses Gaia for basic anomaly detection and analytics",
+        inputs: ["data"],
+        outputs: ["analytics"],
+        color: "#27ae60",
+      },
+      GAIA_ADVANCED: {
+        name: "Gaia Advanced AI",
+        description: "Advanced AI with deeper insights and adaptive learning",
+        inputs: ["data", "metadata"],
+        outputs: ["analytics", "insights"],
+        color: "#229954",
+      },
+    },
+  },
+};
 
 // Helper function to get a specific subtype
 export const getBlockSubtype = (blockType, subType) => {
   if (!blockType || !subType) return null;
-  
+
   const mainType = BLOCK_TYPES[blockType];
   if (!mainType) return null;
-  
-  return mainType.subtypes && mainType.subtypes[subType] 
+
+  return mainType.subtypes && mainType.subtypes[subType]
     ? mainType.subtypes[subType]
     : mainType;
-}
+};
 
 // Helper function to get block info by type (either main type or subtype)
 export const getBlockInfo = (blockType, subType) => {
@@ -219,6 +271,5 @@ export const getBlockInfo = (blockType, subType) => {
     const subTypeInfo = getBlockSubtype(blockType, subType);
     if (subTypeInfo) return subTypeInfo;
   }
-  
   return BLOCK_TYPES[blockType] || null;
-}
+};

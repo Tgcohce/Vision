@@ -14,9 +14,13 @@
         "stakingRequirement": 1000
       },
       "integration": {
-        "provider": "Othentic"
+        "provider": "Othentic",
+        "contractAddress": "0x0000000000000000000000000000000000000001"
       },
-      "dependencies": ["node_2", "node_3"]
+      "dependencies": [
+        "node_2",
+        "node_3"
+      ]
     },
     {
       "id": "node_2",
@@ -25,7 +29,8 @@
         "minValidators": 5
       },
       "integration": {
-        "provider": "Othentic"
+        "provider": "Othentic",
+        "contractAddress": "0x0000000000000000000000000000000000000002"
       },
       "dependencies": []
     },
@@ -37,7 +42,8 @@
         "maxPeers": 20
       },
       "integration": {
-        "provider": "P2P"
+        "provider": "P2P",
+        "contractAddress": "0x0000000000000000000000000000000000000003"
       },
       "dependencies": []
     },
@@ -49,9 +55,12 @@
         "threshold": 0.05
       },
       "integration": {
-        "provider": "Gaia"
+        "provider": "Gaia",
+        "contractAddress": "0x0000000000000000000000000000000000000004"
       },
-      "dependencies": ["node_1"]
+      "dependencies": [
+        "node_1"
+      ]
     },
     {
       "id": "node_5",
@@ -60,7 +69,8 @@
         "ledgerId": "tangle_01"
       },
       "integration": {
-        "provider": "Tangle"
+        "provider": "Tangle",
+        "contractAddress": "0x0000000000000000000000000000000000000005"
       },
       "dependencies": []
     }

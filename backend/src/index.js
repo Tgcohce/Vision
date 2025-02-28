@@ -12,7 +12,12 @@ const { rollbackDeployment } = require('./deploy/rollbackManager');
 const { startMonitoringService } = require('./monitoring/monitoringService');
 const { authenticateToken } = require('./security/auth');
 const { authorizeRole } = require('./security/rbac');
+const { logger } = require('./monitoring/logger');
 const path = require('path');
+
+// Import integrations
+const avsDataAggregator = require('./integrations/avsDataAggregator');
+const tangleBlueprintProcessor = require('./integrations/tangleBlueprintProcessor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,8 +70,8 @@ app.post('/api/deployment/deploy', authenticateToken, authorizeRole('operator', 
     res.status(500).json({ error: error.message });
   }
 });
-const avsDataAggregator = require('./integrations/avsDataAggregator');
 
+// Endpoint to get AVS data for a specific address
 app.get('/api/retina/avs/:avsAddress', authenticateToken, async (req, res) => {
   const { avsAddress } = req.params;
   // Optionally, you can read query parameters for ABI and providerUrl
@@ -85,8 +90,7 @@ app.get('/api/retina/avs/:avsAddress', authenticateToken, async (req, res) => {
   }
 });
 
-const tangleBlueprintProcessor = require('./integrations/tangleBlueprintProcessor');
-
+// Endpoint to process Tangle blueprints
 app.post('/api/tangle/blueprint', authenticateToken, async (req, res) => {
   try {
     const blueprintData = req.body;
@@ -97,8 +101,7 @@ app.post('/api/tangle/blueprint', authenticateToken, async (req, res) => {
   }
 });
 
-const avsDataAggregator = require('./integrations/avsDataAggregator');
-
+// Debug endpoint for AVS data
 app.get('/api/avs/debug', authenticateToken, async (req, res) => {
   try {
     const aggregatedData = await avsDataAggregator.aggregateAvsData();
@@ -130,5 +133,5 @@ startMonitoringService();
 
 // Start the API server
 app.listen(PORT, () => {
-  console.log(`AVS Backend API server running on port ${PORT}`);
+  logger.info(`AVS Backend API server running on port ${PORT}`);
 });

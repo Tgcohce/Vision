@@ -230,6 +230,7 @@ export const BLOCK_TYPES = {
     description: "Block that allows you to paste or write custom code or logic.",
     inputs: ["input"],
     outputs: ["output"],
+    // logic here almost done... need to connect with a subtype to allow for code input 
   },
   AI: {
     type: "ai",
@@ -303,6 +304,54 @@ export const BLOCK_TYPES = {
         inputs: ["task submission"],
         outputs: ["task validation"],
         color: "#2F4F4F"
+      }
+    }
+  },
+  P2P_ENERGY: {
+    type: "p2p_energy",
+    name: "P2P Energy Trading",
+    color: "#20B2AA", // pick any color
+    description: "Smart contracts for trading renewable energy in a grid-connected microgrid using Ethereum.",
+    inputs: ["tradeRequest"],
+    outputs: ["tradeSettlement"],
+    subtypes: {
+      CLEARING: {
+        name: "Clearing Contract",
+        description: "Handles the clearing logic for energy trades. See Clearing.sol.",
+        inputs: ["clearData"],
+        outputs: ["clearedTrades"],
+        color: "#20B2AA"
+      },
+      DOUBLE_SIDED_AUCTION: {
+        name: "Double-sided Auction",
+        description: "Implements an auction mechanism for energy trades. See Double-sidedAuction.sol.",
+        inputs: ["auctionData"],
+        outputs: ["auctionResults"],
+        color: "#20B2AA"
+      },
+      ERC20: {
+        name: "ERC20 Contract",
+        description: "An ERC20 token contract for P2P Energy Trading. See ERC20.sol.",
+        inputs: ["tokenTx"],
+        outputs: ["tokenBalance"],
+        color: "#20B2AA"
+      }
+    }
+  },
+  VOLATILITY: {
+    type: "volatility",
+    name: "Uniswap Volatility",
+    color: "#8B5CF6", 
+    description: "A specialized Uniswap V4 hook that manages dynamic LP fees based on volatility over time.",
+    inputs: ["manager", "poolKey"],
+    outputs: ["dynamic_fee"],
+    subtypes: {
+      VOLATILITY_ORACLE: {
+        name: "Volatility Oracle Hook",
+        description: "A Uniswap V4 hook that calculates and updates LP fees dynamically. See VolatilityOracle.sol.",
+        inputs: ["manager", "poolKey"],
+        outputs: ["dynamic_fee"],
+        color: "#8B5CF6"
       }
     }
   },

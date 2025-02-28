@@ -696,12 +696,30 @@ const Workspace = () => {
     }
   }, [blocks, connections])
 
-  // NEW: Handle deploy button click
-  const handleDeployAVS = useCallback(() => {
-    // Implement your real deployment logic here
-    alert("AVS is being deployed!")
-    // e.g., navigate to another route, call an API, etc.
-  }, [])
+  const handleDeployAVS = useCallback(async () => {
+    // should be good for deploymenent, directly linked this to the index.js file in the backend portion
+    try {
+  
+      const response = await fetch('/api/deployment/deploy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // JSON token bearer
+        },
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || 'Deployment failed');
+      }
+  
+      const result = await response.json();
+      alert(result.message || 'Deployment initiated successfully!');
+    } catch (error) {
+      console.error('Deployment error:', error);
+      alert(`Deployment failed: ${error.message}`);
+    }
+  }, []);
 
   // Connection pointer class
   const getConnectionPointerClass = useCallback(() => {

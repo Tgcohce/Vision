@@ -21,7 +21,7 @@ const Block = ({ id, left, top, blockType, blockInfo, isInPalette, onConnect, se
         left,
         top,
         blockType,
-        subType: subType,
+        subType,
         isInPalette,
         initialClientOffset,
         initialSourceClientOffset,
@@ -56,7 +56,12 @@ const Block = ({ id, left, top, blockType, blockInfo, isInPalette, onConnect, se
   const handleConnectorMouseDown = (e, isInput, connectorName) => {
     e.stopPropagation()
     e.preventDefault() // Prevent text selection during drag
-    onConnect && onConnect(id, isInput, connectorName, e.currentTarget.getBoundingClientRect())
+    
+    // Get connector position more precisely
+    const connectorDot = e.currentTarget.querySelector('.connector-dot')
+    const rect = connectorDot.getBoundingClientRect()
+    
+    onConnect && onConnect(id, isInput, connectorName, rect)
   }
 
   // More precise connector positioning with better distribution
@@ -76,7 +81,7 @@ const Block = ({ id, left, top, blockType, blockInfo, isInPalette, onConnect, se
   }
 
   // Handle subtype selection
-  const handleSubTypeSelect = (e, type, subtypeInfo) => {
+  const handleSubTypeSelect = (e, type) => {
     e.stopPropagation()
     setSubType(type)
     setExpanded(false)
@@ -144,7 +149,7 @@ const Block = ({ id, left, top, blockType, blockInfo, isInPalette, onConnect, se
           <div 
             key={`subtype-main`} 
             className={`dropdown-item ${!subType ? 'active' : ''}`}
-            onClick={(e) => handleSubTypeSelect(e, null, null)}
+            onClick={(e) => handleSubTypeSelect(e, null)}
           >
             {blockInfo.name} (Default)
           </div>
@@ -154,7 +159,7 @@ const Block = ({ id, left, top, blockType, blockInfo, isInPalette, onConnect, se
             <div 
               key={`subtype-${type}`} 
               className={`dropdown-item ${subType === type ? 'active' : ''}`}
-              onClick={(e) => handleSubTypeSelect(e, type, info)}
+              onClick={(e) => handleSubTypeSelect(e, type)}
             >
               {info.name}
             </div>

@@ -1,22 +1,29 @@
 "use client"
 
-const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targetType, onClick }) => {
+import { memo } from "react"
+
+// Optimized Connection component
+const Connection = memo(({ id, start, end, type, onDelete, isActive, sourceType, targetType, onClick }) => {
+  // Don't render if we don't have valid start and end points
+  if (!start || !end || !start.x === undefined || !end.x === undefined) {
+    return null;
+  }
+  
   // Calculate the path for the connection using a smoother curve
   const dx = end.x - start.x
   const dy = end.y - start.y
   const isHorizontal = Math.abs(dx) > Math.abs(dy)
   
   // Dynamic control points calculation based on distance and direction
-  // This creates more natural looking wires that "flow" in the right direction
   const distance = Math.sqrt(dx * dx + dy * dy)
-  const baseTension = 0.45 // Base tension value
-  const tension = Math.min(baseTension, distance / 500) // Limit tension for very long connections
+  const baseTension = 0.4
+  const tension = Math.min(baseTension, distance / 500)
   
   let controlPoint1X, controlPoint1Y, controlPoint2X, controlPoint2Y
   
   if (isHorizontal) {
-    // For horizontal connections, add a natural curve
-    const curvature = Math.min(Math.abs(dx) * tension, 150) // Limit max curvature
+    // For horizontal connections, adds a natural curve
+    const curvature = Math.min(Math.abs(dx) * tension, 150)
     
     controlPoint1X = start.x + curvature
     controlPoint1Y = start.y
@@ -24,7 +31,7 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
     controlPoint2Y = end.y
   } else {
     // For vertical connections, curve outward slightly
-    const curvature = Math.min(Math.abs(dy) * tension, 100) // Limit max curvature
+    const curvature = Math.min(Math.abs(dy) * tension, 100)
     
     controlPoint1X = start.x
     controlPoint1Y = start.y + (dy > 0 ? curvature : -curvature)
@@ -75,8 +82,6 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
         strokeWidth="3"
         fill="none"
         strokeLinecap="round"
-        filter="url(#shadow)"
-        strokeDasharray={isActive ? "1, 0" : "1, 0"}
       />
       
       {/* Glow effect layer */}
@@ -88,7 +93,6 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
         strokeOpacity="0.3"
         fill="none"
         strokeLinecap="round"
-        filter="url(#glow)"
       />
       
       {/* Main connection line */}
@@ -99,7 +103,6 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
         strokeWidth="2.5" 
         fill="none"
         strokeLinecap="round"
-        strokeDasharray={isActive ? "1, 0" : "1, 0"}
       />
       
       {/* Connection flow animation */}
@@ -113,21 +116,6 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
         strokeLinecap="round"
         opacity="0.6"
       />
-      
-      {/* Filter definitions */}
-      <defs>
-        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        
-        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="1" />
-        </filter>
-      </defs>
       
       {/* Delete button */}
       <g 
@@ -148,6 +136,8 @@ const Connection = ({ id, start, end, type, onDelete, isActive, sourceType, targ
       </g>
     </g>
   )
-}
+})
+
+Connection.displayName = 'Connection'
 
 export default Connection

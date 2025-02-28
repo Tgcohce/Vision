@@ -2,77 +2,51 @@
 
 const fs = require('fs');
 const path = require('path');
-const solc = require('solc');
-const Web3 = require('web3');
 const { logger } = require('../monitoring/logger');
-
-// Use environment variables for configuration
-const providerUrl = process.env.PROVIDER_URL || 'https://default-node-url';
-const web3 = new Web3(providerUrl);
-const deployerAccount = process.env.DEPLOYER_ACCOUNT || '0xDefaultAccount';
-const privateKey = process.env.DEPLOYER_PRIVATE_KEY || '0xDefaultPrivateKey';
+const { deployArtifacts } = require('./deployOrchestrator');
 
 /**
- * Compiles and deploys a smart contract.
- * @param {string} contractPath - Path to the Solidity file.
- * @param {Array} constructorArgs - Array of constructor arguments.
- * @returns {Promise<string>} - The deployed contract address.
+ * Creates a deployment manifest and deploys contracts using deployOrchestrator
  */
-async function deployOnchainArtifact(contractPath, constructorArgs = []) {
-  logger.info(`Deploying onchain artifact from ${contractPath}`);
-
-  const source = fs.readFileSync(contractPath, 'utf8');
-  const input = {
-    language: 'Solidity',
-    sources: {
-      'Contract.sol': { content: source }
-    },
-    settings: {
-      outputSelection: {
-        '*': {
-          '*': ['abi', 'evm.bytecode']
-        }
-      }
-    }
-  };
-
-  const output = JSON.parse(solc.compile(JSON.stringify(input)));
-  if (output.errors) {
-    output.errors.forEach(err => logger.error(err.formattedMessage));
-    throw new Error(`Compilation errors in ${contractPath}`);
-  }
-
-  const contractName = Object.keys(output.contracts['Contract.sol'])[0];
-  const abi = output.contracts['Contract.sol'][contractName].abi;
-  const bytecode = output.contracts['Contract.sol'][contractName].evm.bytecode.object;
-
-  const contract = new web3.eth.Contract(abi);
-  const deployTx = contract.deploy({ data: '0x' + bytecode, arguments: constructorArgs });
-  const gasEstimate = await deployTx.estimateGas({ from: deployerAccount });
-
-  const tx = {
-    from: deployerAccount,
-    gas: gasEstimate,
-    data: deployTx.encodeABI()
-  };
-
-  const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
-  const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-
-  logger.info(`${contractName} deployed at address: ${receipt.contractAddress}`);
-  return receipt.contractAddress;
-}
-
 async function deployOnChainArtifacts() {
   try {
-    const governanceContractPath = path.join(process.cwd(), 'contracts', 'TestGovernance.sol');
-    // Example constructor args pulled from your manifest or config
-    const governanceAddress = await deployOnchainArtifact(governanceContractPath, [70, 1500]);
-    logger.info('Governance contract deployed at:', governanceAddress);
-    // Additional deployments...
+    // Generate manifest if needed
+    const manifestDir = path.join(process.cwd(), 'dist');
+    if (!fs.existsSync(manifestDir)) {
+      fs.mkdirSync(manifestDir, { recursive: true });
+    }
+    
+    // Create a basic manifest with the TestGovernance contract
+    const manifest = {
+      "artifacts": [
+        {
+          "id": "governance", 
+          "type": "onchain",
+          "sourcePath": "contracts/TestGovernance.sol",
+          "deployParams": {
+            "threshold": 70,
+            "delay": 1500
+          }
+        }
+      ]
+    };
+    
+    const manifestPath = path.join(manifestDir, 'manifest.json');
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    logger.info('Created deployment manifest at', manifestPath);
+    
+    // Deploy using the orchestrator
+    await deployArtifacts();
+    logger.info('Governance contract deployed successfully');
   } catch (error) {
     logger.error('Error deploying onchain artifacts:', error);
+    process.exit(1);
   }
 }
 
-deployOnChainArtifacts();
+// Run if called directly
+if (require.main === module) {
+  deployOnChainArtifacts();
+}
+
+module.exports = { deployOnChainArtifacts };

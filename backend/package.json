@@ -8,7 +8,8 @@
     "start:dev": "set NODE_ENV=development && node src/index.js",
     "start:prod": "set NODE_ENV=production && node src/index.js",
     "generate": "node src/codegen/hygenWrapper.js",
-    "deploy": "node src/deploy/deployOrchestrator.js",
+    "deploy": "node src/deploy/runDeployment.js",
+    "generate-and-deploy": "node src/deploy/manifestGenerator.js --deploy",
     "config:test": "node src/deploy/populateConfig.js --overwrite",
     "test": "echo \"No tests specified\" && exit 0"
   },
